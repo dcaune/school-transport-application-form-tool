@@ -13,8 +13,8 @@ Ce formulaire en ligne est décliné en 4 langues :
 - [Français](https://forms.gle/NH9g2W8xEXx3kBgd9)
 - [Vietnamien](https://forms.gle/hSr5wPwrUGXqVuwr5)
 
-L'UPMD utilise 4 Google Forms pour implémenter ces 4 formulaires dynamiques. Ces 4 formulaires sont configurés pour enregistrer les réponses des parents dans un document Google Sheets.
+L'UPMD utilise 4 Google Forms pour implémenter ces 4 formulaires dynamiques. Ces 4 formulaires sont configurés pour enregistrer les réponses des parents dans un document Google Sheets. Cependant, chaque formulaire Google Forms enregistre les réponses dans une feuille séparée du document Google Sheets.
 
 ![Réponses des Formulaires d'Inscription](upmd_school_bus_registration_forms_response.jpg)
 
-Cependant, chaque formulaire Google Forms enregistre les réponses dans une feuille séparée du document Google Sheets.
+Le script en ligne de commande (CLI) `aggregate_bus_registration` permet d'aggréger les réponses aux formulaires en un seul jeu de données.
