@@ -159,6 +159,14 @@ class Child(Person):
         self.__grade_level = self.parse_grade_level(grade_name)
         self.__parents = None
 
+    @property
+    def dob(self):
+        return self.__dob
+
+    @property
+    def grade_level(self):
+        return self.__grade_level
+
     @staticmethod
     def parse_grade_level(grade_name):
         """
@@ -175,7 +183,7 @@ class Child(Person):
                 return grade_level
 
 
-class Parent:
+class Parent(Person):
     def __init__(self, last_name, first_name, email_address, phone_number, home_address, locale):
         """
 
@@ -212,12 +220,24 @@ class Parent:
 
         return f'+84.{phone_number.zfill(10)}'
 
+    @property
+    def email_address(self):
+        return self.__email_address
 
-class RegistrationCSVForm:
+    @property
+    def home_address(self):
+        return self.__home_address
+
+    @property
+    def phone_number(self):
+        return self.__phone_number
+
+
+class RegistrationForm:
     RegistrationFields = enum.Enum(
         'RegistrationFields',
         """
-        CSV_FIELD_REGISTRATION_TIME
+        REGISTRATION_TIME
         CHILD1_LAST_NAME
         CHILD1_FIRST_NAME
         CHILD1_DOB
@@ -252,7 +272,7 @@ class RegistrationCSVForm:
         """
     )
 
-    __CHILDREN_FIELDS = [
+    CHILDREN_FIELDS = [
         (
             RegistrationFields.CHILD1_LAST_NAME,
             RegistrationFields.CHILD1_FIRST_NAME,
@@ -278,7 +298,7 @@ class RegistrationCSVForm:
         ),
     ]
 
-    __PARENTS_FIELDS = [
+    PARENTS_FIELDS = [
         (
             RegistrationFields.PARENT1_LAST_NAME,
             RegistrationFields.PARENT1_FIRST_NAME,
@@ -295,8 +315,37 @@ class RegistrationCSVForm:
         )
     ]
 
-    def __init__(self):
-        pass
+    #
+    REGISTRATION_ID_DEFAULT_DIGIT_NUMBER = 9
+
+    #
+    SUBSCRIPTION_AGREEMENTS = {
+        '200': False,
+        '100': True
+    }
+
+    __registration_ids_cache = set()
+
+    def __init__(self, registration_time, children, parents, is_ape_member):
+        self.__registration_id = self.__generate_registration_id(parents)
+        self.__registration_time = registration_time
+        self.__children = children
+        self.__parents = parents
+        self.__is_ape_member = is_ape_member
+
+    @classmethod
+    def __generate_registration_id(cls, parents, digit_number=REGISTRATION_ID_DEFAULT_DIGIT_NUMBER):
+        parent_email_addresses = ', '.join(sorted([parent.email_address for parent in parents]))
+
+        checksum = hashlib.md5(parent_email_addresses.encode()).hexdigest()
+        registration_id = int(checksum, 16) % (10 ** digit_number)
+
+        if registration_id in cls.__registration_ids_cache:
+            raise ValueError(f"the generated registration ID {registration_id} is already used ({parent_email_addresses})")
+
+        cls.__registration_ids_cache.add(registration_id)
+
+        return registration_id
 
     @classmethod
     def __parse_child(cls, row, fields, locale):
@@ -308,29 +357,72 @@ class RegistrationCSVForm:
 
     @classmethod
     def __parse_parent(cls, row, fields, locale):
-        for field in fields:
-            if len(row[field.value - 1].strip()) == 0:
-                return None
+        if len(row[fields[0].value - 1].strip()) == 0:
+            return None
 
         return Parent(*[row[field.value - 1] for field in fields], locale)
 
     @classmethod
+    def __parse_registration_type(cls, row, field):
+        """
+        Indicate whether the family agrees to become a member of the APE
+
+        :param row:
+        :param field:
+
+
+        :return: `True` if the family agrees to become a member of the APE;
+            `False` otherwise.
+        """
+        registration_type = row[field.value - 1].strip()
+
+        for keyword, agreed in cls.SUBSCRIPTION_AGREEMENTS.items():
+            if keyword in registration_type:
+                return agreed
+        else:
+            return False
+
+    @property
+    def children(self):
+        return self.__children
+
+    @classmethod
     def from_csv_row(cls, row, locale):
         registration_time = datetime.datetime.strptime(
-            row[cls.RegistrationFields.CSV_FIELD_REGISTRATION_TIME.value  -1],
+            row[cls.RegistrationFields.REGISTRATION_TIME.value - 1],
             '%m/%d/%Y %H:%M:%S')
 
         children = []
-        for child_fields in cls.__CHILDREN_FIELDS:
+        for child_fields in cls.CHILDREN_FIELDS:
             child = cls.__parse_child(row, child_fields, locale)
             if child is not None:
                 children.append(child)
 
         parents = []
-        for parent_fields in cls.__PARENTS_FIELDS:
+        for parent_fields in cls.PARENTS_FIELDS:
             parent = cls.__parse_parent(row, parent_fields, locale)
             if parent is not None:
                 parents.append(parent)
+
+        is_ape_member = cls.__parse_registration_type(row, cls.RegistrationFields.REGISTRATION_TYPE)
+
+        return RegistrationForm(registration_time, children, parents, is_ape_member)
+
+    @property
+    def is_ape_member(self):
+        return self.__is_ape_member
+
+    @property
+    def parents(self):
+        return self.__parents
+
+    @property
+    def registration_id(self):
+        return self.__registration_id
+
+    @property
+    def registration_time(self):
+        return self.__registration_time
 
 
 def get_console_handler(logging_formatter=LOGGING_FORMATTER):
@@ -349,6 +441,12 @@ def get_console_handler(logging_formatter=LOGGING_FORMATTER):
     return console_handler
 
 
+def get_grade_name(grade_level):
+    for grade_name, grade_level_ in GRADE_NAMES.items():
+        if grade_level_ == grade_level:
+            return grade_name
+
+
 def main():
     arguments = parse_arguments()
 
@@ -359,7 +457,52 @@ def main():
 
         locale = Locale(arguments.locale)
 
-        parse_csv_file(os.path.abspath(os.path.expanduser(csv_file_path_name)), locale)
+        registration_forms = parse_csv_file(os.path.abspath(os.path.expanduser(csv_file_path_name)), locale)
+        # print_registration_forms(registration_forms)
+        generate_registration_csv(registration_forms)
+
+
+def prettify_id(id_):
+    segments = []
+
+    while id_ > 0:
+        segments.append(str(id_ % 1000))
+        id_ //= 1000
+
+    return '-'.join(segments)
+
+
+def print_registration_forms(forms):
+    for form in forms:
+        print(f"===== Registration {prettify_id(form.registration_id)} as {'UPMD' if form.is_ape_member else 'NOT UPMD'} =====")
+
+        print('CHILDREN:')
+        for i, child in enumerate(form.children, 1):
+            print(f"{i}. {child.fullname}, classe de {get_grade_name(child.grade_level)}")
+
+        print('PARENTS:')
+        for i, parent in enumerate(form.parents, 1):
+            print(f"{i}. {parent.fullname}, {parent.email_address}, {parent.phone_number}, {parent.home_address}")
+
+
+def generate_registration_csv(forms):
+    writer = csv.writer(sys.stdout, quoting=csv.QUOTE_ALL)
+
+    for form in forms:
+        for i, child in enumerate(form.children):
+            row = [form.registration_id if i == 0 else '', child.fullname, child.dob, child.grade_level]
+
+            for j, fields in enumerate(RegistrationForm.PARENTS_FIELDS):
+                if i == 0 and j < len(form.parents):
+                    parent = form.parents[j]
+                    row += [parent.fullname, parent.email_address, parent.phone_number, parent.home_address]
+                else:
+                    row += ['' for k in range(len(fields))]
+
+            row.append(('Y' if form.is_ape_member else 'N') if i == 0 else '')
+
+            writer.writerow(row)
+            sys.stdin.flush()
 
 
 def parse_arguments():
@@ -449,7 +592,7 @@ def parse_csv_file(csv_file_path_name, locale, has_header=True):
         corresponds to the header containing a list of field names.
 
 
-    :return: A list of objects `Child`.
+    :return: A list of objects `RegistrationForm`.
     """
     with open(csv_file_path_name) as fd:
         reader = csv.reader(fd)
@@ -481,18 +624,9 @@ def parse_csv_row(row, locale):
         child's second parent.
 
 
-    :return: An object `Child`.
+    :return: An object `RegistrationForm`.
     """
-    # child = Child(child_fullname, class_name)
-    #
-    # parents = [PARENT_CACHE.cache(Parent(parent1_fullname, parent1_email_address))]
-    #
-    # if parent2_fullname:
-    #     parents.append(PARENT_CACHE.cache(Parent(parent2_fullname, parent2_email_address)))
-    #
-    # child.parents = parents
-    # return child
-    RegistrationCSVForm.from_csv_row(row, locale)
+    return RegistrationForm.from_csv_row(row, locale)
 
 
 def setup_logger(
