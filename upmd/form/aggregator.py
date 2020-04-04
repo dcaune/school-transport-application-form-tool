@@ -27,12 +27,16 @@ import datetime
 import enum
 import hashlib
 import logging
+import pickle
 import os
 import re
 import string
 import sys
 from builtins import super
 
+import googleapiclient.discovery
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from majormode.perseus.model.locale import Locale
 from majormode.perseus.utils import string_util
 import unidecode
@@ -64,6 +68,9 @@ GRADE_NAMES = {
     'Première': 15,
     'Terminale': 16,
 }
+
+# If modifying these scopes, delete the file token.pickle.
+GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 
 class Person:
@@ -349,15 +356,16 @@ class RegistrationForm:
 
     @classmethod
     def __parse_child(cls, row, fields, locale):
-        for field in fields:
-            if len(row[field.value - 1].strip()) == 0:
-                return None
+        first_field_index = fields[0].value - 1
+        if len(row[first_field_index].strip()) == 0:
+            return None
 
         return Child(*[row[field.value - 1] for field in fields], locale)
 
     @classmethod
     def __parse_parent(cls, row, fields, locale):
-        if len(row[fields[0].value - 1].strip()) == 0:
+        first_field_index = fields[0].value - 1
+        if len(row[first_field_index].strip()) == 0:
             return None
 
         return Parent(*[row[field.value - 1] for field in fields], locale)
@@ -374,7 +382,8 @@ class RegistrationForm:
         :return: `True` if the family agrees to become a member of the APE;
             `False` otherwise.
         """
-        registration_type = row[field.value - 1].strip()
+        field_index = field.value - 1
+        registration_type = row[field_index].strip()
 
         for keyword, agreed in cls.SUBSCRIPTION_AGREEMENTS.items():
             if keyword in registration_type:
@@ -387,7 +396,13 @@ class RegistrationForm:
         return self.__children
 
     @classmethod
-    def from_csv_row(cls, row, locale):
+    def from_row(cls, row, locale):
+        if not row:
+            raise ValueError('empty row')
+
+        if len(row) < len(cls.RegistrationFields):
+            row.extend([''] * (len(cls.RegistrationFields) - len(row)))
+
         registration_time = datetime.datetime.strptime(
             row[cls.RegistrationFields.REGISTRATION_TIME.value - 1],
             '%m/%d/%Y %H:%M:%S')
@@ -425,6 +440,20 @@ class RegistrationForm:
         return self.__registration_time
 
 
+def flatten_list(l):
+    """
+    Flatten the elements contained in the sub-lists of a list.
+
+
+    :param l: A list containing sub-lists of elements.
+
+
+    :return: A list with all the elements flattened from the sub-lists of
+        the list `l`.
+    """
+    return [e for sublist in l for e in sublist]
+
+
 def get_console_handler(logging_formatter=LOGGING_FORMATTER):
     """
     Return a logging handler that sends logging output to the system's
@@ -441,25 +470,80 @@ def get_console_handler(logging_formatter=LOGGING_FORMATTER):
     return console_handler
 
 
+def get_google_user_credentials(scopes, google_credentials_file_path_name):
+    credentials = None
+
+    # The file token.pickle stores the user's access and refresh tokens, and
+    # is created automatically when the authorization flow completes for the
+    # first time.
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            credentials = pickle.load(token)
+
+    # If there are no (valid) credentials available, let the user log in.
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(google_credentials_file_path_name, scopes)
+            credentials = flow.run_local_server(port=0)
+
+        # Save the credentials for the next run.
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(credentials, token)
+
+    return credentials
+
+
 def get_grade_name(grade_level):
     for grade_name, grade_level_ in GRADE_NAMES.items():
         if grade_level_ == grade_level:
             return grade_name
 
 
+def get_sheet_names(credentials, spreadsheet_id):
+    service = googleapiclient.discovery.build('sheets', 'v4', credentials=credentials)
+    spreadsheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    sheets = spreadsheet_metadata['sheets']
+    return [sheet.get('properties', {})['title'] for sheet in sheets]
+
+
 def main():
     arguments = parse_arguments()
 
     csv_file_path_name = arguments.csv_file_path_name
+
+    google_credentials_file_path_name = os.path.abspath(
+        os.path.expanduser(arguments.google_credentials_file_path_name))
+    input_google_spreadsheet_id = arguments.input_google_spreadsheet_id
+
     if csv_file_path_name:
-        if arguments.locale is None:
-            raise ValueError("a locale must be passed")
+        # if arguments.locale is None:
+        #     raise ValueError("a locale must be passed")
+        #
+        # locale = Locale(arguments.locale)
+        values = read_csv_file_values(csv_file_path_name)
 
-        locale = Locale(arguments.locale)
+    elif google_credentials_file_path_name and input_google_spreadsheet_id:
+        credentials = get_google_user_credentials(
+            GOOGLE_SPREADSHEET_SCOPES,
+            google_credentials_file_path_name)
+        sheet_names = get_sheet_names(credentials, input_google_spreadsheet_id)
+        values = flatten_list([
+            read_google_sheet_values(credentials, input_google_spreadsheet_id, sheet_name)
+            for sheet_name in sheet_names
+        ])
 
-        registration_forms = parse_csv_file(os.path.abspath(os.path.expanduser(csv_file_path_name)), locale)
-        # print_registration_forms(registration_forms)
-        generate_registration_csv(registration_forms)
+    else:
+        raise ValueError('a CSV file or a Google spreadsheet ID must be identified')
+
+    registration_forms = [RegistrationForm.from_row(row, Locale('fra')) for row in values if row]
+
+    # registration_forms = parse_csv_file(os.path.abspath(os.path.expanduser(csv_file_path_name)), locale)
+    # print_registration_forms(registration_forms)
+    generate_registration_csv(registration_forms)
+
+
 
 
 def prettify_id(id_):
@@ -490,7 +574,7 @@ def generate_registration_csv(forms):
 
     for form in forms:
         for i, child in enumerate(form.children):
-            row = [form.registration_id if i == 0 else '', child.fullname, child.dob, child.grade_level]
+            row = [form.registration_id if i == 0 else '', child.fullname, child.dob, get_grade_name(child.grade_level)]
 
             for j, fields in enumerate(RegistrationForm.PARENTS_FIELDS):
                 if i == 0 and j < len(form.parents):
@@ -532,101 +616,134 @@ def parse_arguments():
         required=False,
         help="specify the locale (ISO 639-3 code) corresponding to the language of the registration form")
 
+    parser.add_argument(
+        '-c',
+        '--google-credentials',
+        dest='google_credentials_file_path_name',
+        metavar='FILE',
+        required=False,
+        default='credentials.json',
+        help="absolute path and name of the Google credentials file")
+
+    parser.add_argument(
+        '-i',
+        '--input-google-spreadsheet_id',
+        dest='input_google_spreadsheet_id',
+        metavar='ID',
+        required=False,
+        help="specify the identification of the Google spreadsheet containing the responses to the registration forms"
+    )
+
     return parser.parse_args()
 
 
-def parse_csv_file(csv_file_path_name, locale, has_header=True):
-    """
-    Return the list of children and parents parsed from a CSV file
+# def parse_csv_file(csv_file_path_name, locale, has_header=True):
+#     """
+#     Return the list of children and parents parsed from a CSV file
+#
+#
+#     :param csv_file_path_name: Absolute path and name of a CVS file from
+#         the French International School Marguerite Duras.
+#
+#         This file contains a row per child with the following columns:
+#
+#         01. Registration Time
+#         02. Child 1 Last Name
+#         03. Child 1 First Name
+#         04. Child 1 Date of Birth
+#         05. Child 1 Grade Name
+#
+#         06. Second Child?
+#
+#         07. Child 2 Last Name
+#         08. Child 2 First Name
+#         09. Child 2 Date of Birth
+#         10. Child 2 Grade Name
+#
+#         11. Third Child?
+#
+#         12. Child 3 Last Name
+#         13. Child 3 First Name
+#         14. Child 3 Date of Birth
+#         15. Child 3 Grade Name
+#
+#         17. Fourth Child?
+#
+#         18. Child 4 Last Name
+#         19. Child 4 First Name
+#         20. Child 4 Date of Birth
+#         21. Child 4 Grade Name
+#
+#         22. Parent 1 Last Name
+#         23. Parent 1 First Name
+#         24. Parent 1 Email Address
+#         25. Parent 1 Phone Number
+#         26. Parent 1 Home Address
+#
+#         27. Second Parent?
+#
+#         28. Parent 2 Last Name
+#         29. Parent 2 First Name
+#         30. Parent 2 Email Address
+#         31. Parent 2 Phone Number
+#         32. Parent 2 Home Address (if different from Parent 1's)
+#
+#         33. Registration Type
+#
+#     :param has_header: Indicate whether the very first row of the CSV file
+#         corresponds to the header containing a list of field names.
+#
+#
+#     :return: A list of objects `RegistrationForm`.
+#     """
+#     with open(csv_file_path_name) as fd:
+#         reader = csv.reader(fd)
+#
+#         # Skip the very first header row.
+#         if has_header:
+#             next(reader)
+#
+#         return [parse_csv_row(row, locale) for row in reader]
+#
+#
+# def parse_csv_row(row, locale):
+#     """
+#     Return an object `Child` corresponding to the specified information
+#
+#
+#     :param row: A row of the registration form CSV file.
+#
+#     :param locale: An object `Locale` representing the language of the
+#         registration form.
+#
+#
+#     :return: An object `RegistrationForm`.
+#     """
+#     return RegistrationForm.from_csv_row(row, locale)
 
 
-    :param csv_file_path_name: Absolute path and name of a CVS file from
-        the French International School Marguerite Duras.
-
-        This file contains a row per child with the following columns:
-
-        01. Registration Time
-        02. Child 1 Last Name
-        03. Child 1 First Name
-        04. Child 1 Date of Birth
-        05. Child 1 Grade Name
-
-        06. Second Child?
-
-        07. Child 2 Last Name
-        08. Child 2 First Name
-        09. Child 2 Date of Birth
-        10. Child 2 Grade Name
-
-        11. Third Child?
-
-        12. Child 3 Last Name
-        13. Child 3 First Name
-        14. Child 3 Date of Birth
-        15. Child 3 Grade Name
-
-        17. Fourth Child?
-
-        18. Child 4 Last Name
-        19. Child 4 First Name
-        20. Child 4 Date of Birth
-        21. Child 4 Grade Name
-
-        22. Parent 1 Last Name
-        23. Parent 1 First Name
-        24. Parent 1 Email Address
-        25. Parent 1 Phone Number
-        26. Parent 1 Home Address
-
-        27. Second Parent?
-
-        28. Parent 2 Last Name
-        29. Parent 2 First Name
-        30. Parent 2 Email Address
-        31. Parent 2 Phone Number
-        32. Parent 2 Home Address (if different from Parent 1's)
-
-        33. Registration Type
-
-    :param has_header: Indicate whether the very first row of the CSV file
-        corresponds to the header containing a list of field names.
-
-
-    :return: A list of objects `RegistrationForm`.
-    """
+def read_csv_file_values(csv_file_path_name, has_header=True):
     with open(csv_file_path_name) as fd:
         reader = csv.reader(fd)
 
-        if has_header:  # Skip the first header row.
+        # Skip the very first header row.
+        if has_header:
             next(reader)
-            
-        return [parse_csv_row(row, locale) for row in reader]
+
+        return [values for values in reader]
 
 
-def parse_csv_row(row, locale):
-    """
-    Return an object `Child` corresponding to the specified information
-
-
-    :param child_fullname: The fullname of a child.
-
-    :param class_name: The name of the child's class.
-
-    :param parent1_fullname: The fullname of a first parent of the child.
-
-    :param parent1_email_address: The email address of the child's first
-        parent.
-
-    :param parent2_fullname: The fullname of a possible second parent of
-        the child.
-
-    :param parent2_email_address: The email address of the possible
-        child's second parent.
-
-
-    :return: An object `RegistrationForm`.
-    """
-    return RegistrationForm.from_csv_row(row, locale)
+def read_google_sheet_values(
+        credentials,
+        spreadsheet_id,
+        sheet_name,
+        sheet_range='A2:AF'):
+    service = googleapiclient.discovery.build('sheets', 'v4', credentials=credentials)
+    spreadsheets_resource = service.spreadsheets()
+    sheet_range_values = spreadsheets_resource.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f'{sheet_name}!{sheet_range}').execute()
+    return sheet_range_values.get('values', [])
 
 
 def setup_logger(

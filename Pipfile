@@ -11,6 +11,11 @@ perseus-core-library = "*"
 wheel = "*"
 setuptools = "*"
 twine = "*"
+oauth2client = "*"
+google-api-python-client = "*"
+google-auth-httplib2 = "*"
+google-auth-oauthlib = "*"
+langdetect = "*"
 
 [requires]
 python_version = "3.7"
