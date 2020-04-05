@@ -21,7 +21,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import argparse
+import collections
 import csv
 import datetime
 import enum
@@ -50,13 +50,18 @@ import unidecode
 # Sheets API is stored in.
 DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME = 'oauth2_token.pickle'
 
-# Default format to use by the logger.
-DEFAULT_LOGGING_FORMATTER = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+# Default name of the file where the client application secrets
+# (credentials) to access Google Sheets API are stored in.
+# [https://console.cloud.google.com/apis/credentials]
+DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME = 'google_credentials.json'
 
-# Default port number of the Simple Mail Transfer Protocol (SMTP) server
-# to connect to in order to send confirmation e-mails to the parents who
-# subscribe to the school bus transportation service.
-DEFAULT_SMTP_PORT = 587
+# Default name of the file where the connection properties to the
+# Simple Mail Transfer Protocol (SMTP) is stored in.
+DEFAULT_SMTP_CONNECTION_PROPERTIES_FILE_NAME = 'smtp_connection_properties.pickle'
+
+# Default relative path of the folder where the e-mail templates and
+# attachment files are stored in.
+DEFAULT_TEMPLATE_RELATIVE_PATH = './templates'
 
 # Supported locale to format parents and children' fullname.
 ENGLISH_LOCALE = Locale('eng')
@@ -89,7 +94,7 @@ GRADE_NAMES = {
 # access to these sheets and their properties.
 #
 # @note: if modifying these scopes, delete the file the local OAuth2
-# token file (cf. `DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME`).
+#     token file (cf. `DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME`).
 GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 # Fee that the parents need to pay in order to subscribe to the school
@@ -136,6 +141,7 @@ class Person:
         self.__last_name = self.format_last_name(last_name, locale)
         self.__first_name = self.format_first_name(first_name, locale)
         self.__fullname = self.format_fullname(self.__last_name, self.__first_name, locale)
+        self.__locale = locale
 
     @classmethod
     def format_first_name(cls, first_name, locale):
@@ -239,6 +245,15 @@ class Person:
     def last_name(self):
         return self.__last_name
 
+    @property
+    def locale(self):
+        """
+         Return the supposedly preferred language of this person.
+
+        :return: An object `Locale`.
+        """
+        return self.__locale
+
 
 class Child(Person):
     def __init__(self, last_name, first_name, dob, grade_name, locale):
@@ -262,10 +277,8 @@ class Child(Person):
             this locale is supposed to be the preferred language of the child.
         """
         super().__init__(last_name, first_name, locale)
-
         self.__dob = datetime.datetime.strptime(dob, '%m/%d/%Y')
         self.__grade_level = self.parse_grade_level(grade_name)
-        self.__parents = None
 
     @property
     def dob(self):
@@ -355,9 +368,7 @@ class Parent(Person):
             if not is_secondary_parent:
                 ValueError('the home address of the primary parent must be passed')
 
-            home_address = None
-
-        self.__home_address = self.__cleanse_postal_address(home_address)
+        self.__home_address = home_address and self.__cleanse_postal_address(home_address)
 
     @staticmethod
     def __cleanse_postal_address(home_address):
@@ -686,7 +697,10 @@ class Registration:
         """
         first_field_index = fields[0].value - 1
         if len(row[first_field_index].strip()) == 0:
-            return None
+            if is_secondary_parent:
+                return None
+
+            raise ValueError('The primary parent has not been defined')
 
         return Parent(*[row[field.value - 1] for field in fields], locale, is_secondary_parent)
 
@@ -771,8 +785,8 @@ class Registration:
 
         # List the parent(s) who submitted the registration form.
         parents = []
-        for parent_fields in cls.PARENTS_FIELDS:
-            parent = cls.__parse_parent(row, parent_fields, locale)
+        for i, parent_fields in enumerate(cls.PARENTS_FIELDS):
+            parent = cls.__parse_parent(row, parent_fields, locale, is_secondary_parent=i > 0)
             if parent is not None:
                 parents.append(parent)
 
@@ -801,6 +815,160 @@ class Registration:
     @property
     def registration_time(self):
         return self.__registration_time
+
+
+def build_registration_confirmation_email_content(registration, locale, template_path):
+    """
+    Build the localized content of a registration confirmation e-mail to
+    send to a family.
+
+
+    :param registration: An object `Registration`.
+
+    :paran locale: An object `Locale` that refers to the language to
+        return the e-mail template and the file to attach to.
+
+    :param template_path: The absolute path of the folder where localized
+        e-mail templates and files to attach are stored in.
+
+
+    :return: The localized content of the email.
+    """
+    template_content = get_registration_confirmation_email_template(locale, template_path)
+
+    placeholders = {
+        PLACEHOLDER_PARENT_NAME: ' / '.join([parent.fullname for parent in registration.parents]),
+        PLACEHOLDER_PAYMENT_AMOUNT: PAYMENT_AMOUNT_UPMD if registration.is_ape_member else PAYMENT_AMOUNT_NON_UPMD,
+        PLACEHOLDER_REGISTRATION_ID: prettify_registration_id(registration.registration_id),
+    }
+
+    email_content = expand_placeholders_value(template_content, placeholders)
+    email_subject = get_email_subject(email_content)
+
+    return email_subject, email_content
+
+
+def build_registration_rows(registration):
+    """
+    Build the rows of values of the registration of a family to the school
+    bus transportation service.
+
+    There are as many rows as the number of children registered to the
+    transportation service.  The first row corresponds to a first child of
+    the family, and some other information that is not duplicated over the
+    other rows:
+
+    - identification of the registration;
+    - date and time when the family submitted its registration;
+    - information about the primary parent;
+    - information about a possible secondary parent;
+    - a flag that indicates whether the family is willing to become or not
+      a member of the parents association.
+
+
+    :param registration: An object `Registration`.
+
+
+    :return: A list of registration's rows to be inserted in the master
+        list.
+    """
+    rows = []
+
+    for i, child in enumerate(registration.children):
+        row = [
+            registration.registration_id if i == 0 else '',
+            registration.registration_time.strftime("%Y-%m-%d %H:%M:%S") if i == 0 else '',
+            child.fullname,
+            child.dob.strftime('%Y-%m-%d'),
+            get_grade_name(child.grade_level)
+        ]
+
+        for j, fields in enumerate(Registration.PARENTS_FIELDS):
+            if i == 0 and j < len(registration.parents):
+                parent = registration.parents[j]
+                row.extend([
+                    parent.fullname,
+                    parent.email_address,
+                    parent.phone_number,
+                    parent.home_address
+                ])
+            else:
+                row.extend([''] * 4)  # Fullname, email, phone, address
+
+        row.append(('Y' if registration.is_ape_member else 'N') if i == 0 else '')
+        rows.append(row)
+
+    return rows
+
+
+def build_root_file_path_name(file_name):
+    """
+    Return the absolute path and name of a file located at the root of the
+    project.
+
+
+    :param file_name: the name of a file.
+
+
+    :return: Absolute path and name of the file.
+    """
+    return os.path.join(
+        os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__)),
+        file_name)
+
+
+def build_smtp_connection_properties(
+        arguments,
+        smtp_connection_properties_file_path_name=None):
+    """
+    Return the connection properties to the Simple Mail Transfer Protocol
+    (SMTP) server.
+
+
+    :param arguments: an instance `argparse.Namespace` corresponding to
+        the populated namespace from the options passed to the command line.
+
+    :param smtp_connection_properties_file_path_name: The absolute path
+        and file where the SMTP connection properties are stored in.
+
+
+    :return: An object `SmtpConnectionProperties`.
+    """
+    if smtp_connection_properties_file_path_name is None:
+        smtp_connection_properties_file_path_name = \
+            build_root_file_path_name(DEFAULT_SMTP_CONNECTION_PROPERTIES_FILE_NAME)
+
+    properties = None
+
+    # Load the connection properties from the file if it exists.
+    if os.path.exists(smtp_connection_properties_file_path_name):
+        with open(smtp_connection_properties_file_path_name, 'rb') as fd:
+            properties = pickle.load(fd)
+
+    # Override properties the would have been passed as arguments on the
+    # command line, or prompt the user for entering the properties that are
+    # missing.
+    username = arguments.smtp_username \
+        or (properties and properties.username) \
+        or input("Enter your SMTP username: ")
+
+    password = (properties and properties.password) \
+        or getpass.getpass("Enter your SMTP password: ")
+
+    hostname = (properties and properties.hostname) \
+        or arguments.smtp_hostname or input("Enter the SMTP hostname: ")
+
+    port_number = (properties and properties.port_number) \
+        or arguments.smtp_port
+
+    new_properties = SmtpConnectionProperties(hostname, username, password, port_number)
+
+    # Save the properties to the file for the next run.
+    if properties is None or properties != new_properties:
+        with open(smtp_connection_properties_file_path_name, 'wb') as fd:
+            pickle.dump(new_properties, fd)
+
+    return new_properties
 
 
 def detect_locale(text):
@@ -883,6 +1051,34 @@ def expand_placeholders_value(content, placeholders, ignore_unused_placeholders=
     return content
 
 
+def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
+    """
+    Return the list of identifications of the registrations that have been
+    already processed and stored in the master list.
+
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param spreadsheet_id: Identification of the Google Sheets document
+        where all the family registrations have been stored in.
+
+
+    :return: A list of integers representing all the registrations that
+        have been already processed so far.
+
+
+    :raise ValueError: if the Google Sheets has more than one sheet.
+    """
+    sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
+    if len(sheet_names) > 1:
+        raise ValueError(f"the output Google spreadsheet must contain one sheet only: {', '.join(sheet_names)}")
+
+    sheet_name = sheet_names[0]
+    rows = read_google_sheet_values(spreadsheets_resource, spreadsheet_id, sheet_name, 'A3:M')
+    return [int(''.join([c for c in values[0] if c.isdigit()])) for values in rows if values[0]]
+
+
 def flatten_list(l):
     """
     Flatten the elements contained in the sub-lists of a list.
@@ -897,267 +1093,25 @@ def flatten_list(l):
     return [e for sublist in l for e in sublist]
 
 
-def get_console_handler(logging_formatter=DEFAULT_LOGGING_FORMATTER):
+def get_registration_confirmation_email_attachment_file_path_name(locale, template_path):
     """
-    Return a logging handler that sends logging output to the system's
-    standard output.
+    Return the absolute path and name of the file to attach to the
+    registration confirmation e-mail to be sent to the parent(s) of a
+    family.
 
 
-    :param logging_formatter: An object `Formatter` to set for this handler.
+    :param locale: An object `Locale` that references that language of the
+        file to attache to the registration confirmation e-mail template.
+        If no file corresponds to the specified locale, the functions
+        returns the file corresponding to the English language.
+
+    :param template_path: The absolute path of the folder where the
+        localized files to attached to a registration confirmation e-mail
+        are stored in.
 
 
-    :return: An instance of the `StreamHandler` class.
+    :return: The content of the localized e-mail template.
     """
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(logging_formatter)
-    return console_handler
-
-
-def get_google_user_credentials(scopes, google_credentials_file_path_name):
-    credentials = None
-
-    # The file token.pickle stores the user's access and refresh tokens, and
-    # is created automatically when the authorization flow completes for the
-    # first time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as fd:
-            credentials = pickle.load(fd)
-
-    # If there are no (valid) credentials available, let the user log in.
-    if not credentials or not credentials.valid:
-        if credentials and credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(google_credentials_file_path_name, scopes)
-            credentials = flow.run_local_server(port=0)
-
-        # Save the credentials for the next run.
-        with open('token.pickle', 'wb') as fd:
-            pickle.dump(credentials, fd)
-
-    return credentials
-
-
-def get_grade_name(grade_level):
-    for grade_name, grade_level_ in GRADE_NAMES.items():
-        if grade_level_ == grade_level:
-            return grade_name
-
-
-def get_sheet_names(spreadsheets_resource, spreadsheet_id):
-    spreadsheet_metadata = spreadsheets_resource.get(spreadsheetId=spreadsheet_id).execute()
-    sheets = spreadsheet_metadata['sheets']
-    return [sheet.get('properties', {})['title'] for sheet in sheets]
-
-
-def main():
-    arguments = parse_arguments()
-    setup_logger(logger_name='SchoolBusRegistrationAggregator')
-
-    smtp_connection_properties = build_smtp_connection_properties(arguments)
-
-    email_template_path = os.path.abspath(os.path.expanduser(arguments.email_template_path))
-
-    csv_file_path_name = arguments.csv_file_path_name
-
-    google_credentials_file_path_name = os.path.abspath(
-        os.path.expanduser(arguments.google_credentials_file_path_name))
-
-    input_google_spreadsheet_id = arguments.input_google_spreadsheet_id
-    output_google_spreadsheet_id = arguments.output_google_spreadsheet_id
-
-    if csv_file_path_name:
-        if arguments.locale is None:
-            raise ValueError("a locale must be passed")
-
-        locale = Locale(arguments.locale)
-        values = read_csv_file_values(csv_file_path_name)
-        registration_forms = [
-            Registration.from_row(row, locale)
-            for row in values
-            if row
-        ]
-
-    elif input_google_spreadsheet_id:
-        if not google_credentials_file_path_name:
-            ValueError('a Google credentials file must be provided')
-
-        credentials = get_google_user_credentials(
-            GOOGLE_SPREADSHEET_SCOPES,
-            google_credentials_file_path_name)
-
-        logging.info("Opening the Google spreadsheet...")
-        service = googleapiclient.discovery.build('sheets', 'v4', credentials=credentials)
-        spreadsheets_resource = service.spreadsheets()
-        sheet_names = get_sheet_names(spreadsheets_resource, input_google_spreadsheet_id)
-
-        sheet_name_locales = []
-        for sheet_name in sheet_names:
-            try:
-                sheet_name_locales.append((sheet_name, Locale(sheet_name)))
-            except Locale.MalformedLocaleException:
-                raise ValueError(f"the Google sheet name {sheet_name} doesn't correspond to a locale")
-
-        logging.info("Fetching registrations from the sheets {}...".format(', '.join([f'"{name}"' for name in sheet_names])))
-        registration_forms = [
-            Registration.from_row(row, locale)
-            for sheet_name, locale in sheet_name_locales
-            for row in [
-                values
-                for values in read_google_sheet_values(spreadsheets_resource, input_google_spreadsheet_id, sheet_name, 'A2:AF')
-                if values
-            ]
-        ]
-
-    else:
-        raise ValueError("a CSV file or a Google spreadsheet ID must be identified")
-
-
-    # registration_forms = parse_csv_file(os.path.abspath(os.path.expanduser(csv_file_path_name)), locale)
-    # print_registration_forms(registration_forms)
-    # generate_registration_csv(registration_forms)
-
-    if output_google_spreadsheet_id:
-        if not google_credentials_file_path_name:
-            ValueError('a Google credentials file must be provided')
-
-        logging.info('Fetch registrations previously added...')
-
-        existing_registration_ids = fetch_existing_registration_ids(
-            spreadsheets_resource,
-            output_google_spreadsheet_id)
-
-        row_count = get_spreadsheet_used_row_count(spreadsheets_resource, output_google_spreadsheet_id)
-
-        new_registration_forms = [
-            form
-            for form in registration_forms
-            if form.registration_id not in existing_registration_ids
-        ]
-
-        for form in new_registration_forms:
-            process_registration_form(
-                form,
-                smtp_connection_properties,
-                email_template_path,
-                'Commission Transport Scolaire',
-                'transport@upmd.fr',
-                spreadsheets_resource,
-                output_google_spreadsheet_id,
-                f'A{row_count + 1}')
-
-            row_count += len(form.children)
-
-
-def get_spreadsheet_used_row_count(spreadsheets_resource, output_google_spreadsheet_id, sheet_name=None):
-    if sheet_name is None:
-        sheet_names = get_sheet_names(spreadsheets_resource, output_google_spreadsheet_id)
-        if len(sheet_names) > 1:
-            raise ValueError(f"the output Google spreadsheet must contain one sheet only: {', '.join(sheet_names)}")
-        sheet_name = sheet_names[0]
-
-    # For optimization: Find the index of the last row with a registration ID.
-    row_index = len(read_google_sheet_values(spreadsheets_resource, output_google_spreadsheet_id, sheet_name, 'A1:A')) + 1
-
-    while True:
-        # Retrieve the values of the entire row.
-        values = read_google_sheet_values(spreadsheets_resource, output_google_spreadsheet_id, sheet_name, f'A{row_index}:M{row_index}')
-        if not values:
-            break
-
-        row_index += 1
-
-    return row_index - 1
-
-
-def fetch_existing_registration_ids(spreadsheets_resource, output_google_spreadsheet_id):
-    sheet_names = get_sheet_names(spreadsheets_resource, output_google_spreadsheet_id)
-    if len(sheet_names) > 1:
-        raise ValueError(f"the output Google spreadsheet must contain one sheet only: {', '.join(sheet_names)}")
-
-    sheet_name = sheet_names[0]
-    rows = read_google_sheet_values(spreadsheets_resource, output_google_spreadsheet_id, sheet_name, 'A3:M')
-    return [int(''.join([c for c in values[0] if c.isdigit()])) for values in rows if values[0]]
-
-
-def process_registration_form(
-        form,
-        properties,
-        template_path,
-        author_name,
-        author_email_address,
-        spreadsheets_resource,
-        spreadsheet_id,
-        sheet_range):
-    send_registration_confirmation_email(form, properties, template_path, author_name, author_email_address)
-    insert_registration_to_master_list(form, spreadsheets_resource, spreadsheet_id, sheet_range)
-
-
-def insert_registration_to_master_list(form, spreadsheets_resource, spreadsheet_id, sheet_range):
-    values = generate_registration_form_values(form)
-    body = {
-        'values': values
-    }
-
-    sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
-    if len(sheet_names) > 1:
-        raise ValueError(f"the output Google spreadsheet must contain one sheet only: {', '.join(sheet_names)}")
-
-    sheet_name = sheet_names[0]
-
-    result = spreadsheets_resource.values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f'{sheet_name}!{sheet_range}',
-        valueInputOption='RAW',
-        body=body).execute()
-
-    return result
-
-
-def send_registration_confirmation_email(form, properties, template_path, author_name, author_email_address):
-    email_subject, email_content = build_registration_confirmation_email_content(form, template_path)
-
-    parent_email_addresses = [parent.email_address for parent in form.parents]
-
-    logging.info(f"Sending email to {','.join(parent_email_addresses)}")
-    email_util.send_email(
-        properties.hostname,
-        properties.username,
-        properties.password,
-        author_name,
-        author_email_address,
-        parent_email_addresses,
-        email_subject,
-        email_content,
-        file_path_names=get_email_attachment_file_path_name(form.locale, template_path),
-        port_number=properties.port_number)
-
-
-def build_registration_confirmation_email_content(form, template_path):
-    template_content = get_email_template(form.locale, template_path)
-
-    placeholders = {
-        PLACEHOLDER_PARENT_NAME: ' / '.join([parent.fullname for parent in form.parents]),
-        PLACEHOLDER_PAYMENT_AMOUNT: PAYMENT_AMOUNT_UPMD if form.is_ape_member else PAYMENT_AMOUNT_NON_UPMD,
-        PLACEHOLDER_REGISTRATION_ID: prettify_registration_id(form.registration_id),
-    }
-
-    email_content = expand_placeholders_value(template_content, placeholders)
-    email_subject = get_email_subject(email_content)
-
-    return email_subject, email_content
-
-
-def get_email_template(locale, template_path):
-    template_file_path_name = os.path.join(template_path, f'{locale}.html')
-    if not os.path.exists(template_file_path_name):
-        template_file_name =  os.path.join(template_file_path_name, f'{ENGLISH_LOCALE}.html')
-
-    with open(template_file_path_name, 'rt') as fd:
-        return fd.read()
-
-
-def get_email_attachment_file_path_name(locale, template_path):
     attachment_file_path_name = os.path.join(template_path, f'{locale}.jpg')
     if not os.path.exists(attachment_file_path_name):
         attachment_file_path_name = os.path.join(template_path, f'{ENGLISH_LOCALE}.jpg')
@@ -1187,6 +1141,293 @@ def get_email_subject(content):
     return content[start_offset:end_offset]
 
 
+def get_google_oauth2_token(
+        scopes,
+        google_credentials_file_path_name=None,
+        google_oauth2_token_file_path_name=None):
+    """
+    Return the OAuth2 credentials to access Google Sheets API.
+
+
+    :param scopes: OAuth2 scope information to access Google Sheets.
+
+    :param google_credentials_file_path_name: The absolute path and name
+        of the file where the client application secrets are stored in.
+
+    :param google_oauth2_token_file_path_name: The absolute path and name
+        of the file where the OAuth2 token is loaded from, if it exists,
+        and stored in.
+
+
+    :return: The OAuth2 credentials.
+    """
+    if google_credentials_file_path_name is None:
+        google_credentials_file_path_name = build_root_file_path_name(DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME)
+
+    if google_oauth2_token_file_path_name is None:
+        google_oauth2_token_file_path_name = build_root_file_path_name(DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME)
+
+    oauth2_token = None
+
+    # The OAuth2 token file stores the user's access and refresh tokens, and
+    # is created automatically when the authorization flow completes for the
+    # first time.
+    if os.path.exists(google_oauth2_token_file_path_name):
+        with open(google_oauth2_token_file_path_name, 'rb') as fd:
+            oauth2_token = pickle.load(fd)
+
+    # If there are no (valid) credentials available, let the user log in.
+    if not oauth2_token or not oauth2_token.valid:
+        if oauth2_token and oauth2_token.expired and oauth2_token.refresh_token:
+            oauth2_token.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(google_credentials_file_path_name, scopes)
+            oauth2_token = flow.run_local_server(port=0)
+
+        # Save the credentials for the next run.
+        with open(google_oauth2_token_file_path_name, 'wb') as fd:
+            pickle.dump(oauth2_token, fd)
+
+    return oauth2_token
+
+
+def get_grade_name(grade_level):
+    """
+    Return the name of an education grade.
+
+
+    :param grade_level: Level of the education grade to return the name.
+
+
+    :return: Name of the specified education grade.
+    """
+    for grade_name, grade_level_ in GRADE_NAMES.items():
+        if grade_level_ == grade_level:
+            return grade_name
+
+
+def get_registration_confirmation_email_template(locale, template_path):
+    """
+    Return a localized e-mail template.
+
+    This template corresponds to registration confirmation e-mail that is
+    sent to the parent(s) of the family.
+
+
+    :param locale: An object `Locale` that references that language of the
+        e-mail template to return.  If no template corresponds to the
+        specified locale, the functions returns the e-mail template
+        written in English.
+
+    :param template_path: The absolute path of the folder where localized
+        e-mail templates are stored in.
+
+
+    :return: The content of the localized e-mail template.
+    """
+    template_file_path_name = os.path.join(template_path, f'{locale}.html')
+    if not os.path.exists(template_file_path_name):
+        template_file_path_name = os.path.join(template_path, f'{ENGLISH_LOCALE}.html')
+
+    with open(template_file_path_name, 'rt') as fd:
+        return fd.read()
+
+
+def get_sheet_names(spreadsheets_resource, spreadsheet_id):
+    """
+    Return the names of all the sheets of a Google Sheets document.
+
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param spreadsheet_id: Identification of a Google Sheet document.
+
+
+    :return: A list of the names of the sheets that this Google Sheets
+        document contains.
+    """
+    spreadsheet_metadata = spreadsheets_resource.get(spreadsheetId=spreadsheet_id).execute()
+    sheets = spreadsheet_metadata['sheets']
+    return [sheet.get('properties', {})['title'] for sheet in sheets]
+
+
+def get_sheet_used_row_count(
+        spreadsheets_resource,
+        spreadsheet_id,
+        sheet_name=None):
+    """
+    Return the number of rows already used in the specified sheet.
+
+    A row is used when at least one of its columns is not empty.
+
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param spreadsheet_id: Identification of a Google Sheets document.
+
+    :param sheet_name: Name of the sheet to count the number of rows
+        already used, or `None` if the Google Sheets contains just one
+        sheet.
+
+
+    :return: The number of rows already used in the specified sheet of a
+        Google Sheets document.
+    """
+    # Determine the name of the sheet, if not passed.
+    if sheet_name is None:
+        sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
+        if len(sheet_names) > 1:
+            raise ValueError(f"the argument 'sheet_name' has not been passed while the Google Sheets contain several sheets: {', '.join(sheet_names)}")
+        sheet_name = sheet_names[0]
+
+    # @patch: Reading each individual row of a sheet is time consuming as
+    #    this sends one request per row to fetch.  For optimization purpose,
+    #    we consider that the first column of each row of a sheet always
+    #    contains a value when the row is not empty.  Therefore, we fetch
+    #    the range composed of the first column of the sheet.  Google Sheets
+    #    return the values of the first columns of every non-empty row.  The
+    #    number of rows returned corresponds to the index of the last row
+    #    that is not empty.
+    row_index = len(read_google_sheet_values(
+        spreadsheets_resource,
+        spreadsheet_id,
+        sheet_name,
+        'A1:A')) + 1
+
+    # Read the column values of each consecutive row until a row is empty.
+    while True:
+        values = read_google_sheet_values(
+            spreadsheets_resource,
+            spreadsheet_id,
+            sheet_name,
+            f'A{row_index}:M{row_index}')
+        if not values:
+            break
+        row_index += 1
+
+    return row_index - 1
+
+
+def insert_registration_to_master_list(
+        registration,
+        spreadsheets_resource,
+        spreadsheet_id,
+        sheet_range):
+    """
+    Insert the information of a registration to the school bus
+    transportation service to the master list.
+
+
+    :param registration: An object `Registration`.
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param spreadsheet_id: Identification of the Google Sheets document
+        used as the master list of the registrations of all the families
+        to the school bus transportation service.
+
+    :param sheet_range: Range (a row) in the master list sheet where to
+        start inserting the information of this registration.
+
+
+    :raise ValueError: If the Google Sheets document contains more than
+        one sheet.
+    """
+    # Find the name of the unique sheet contained in this spreadsheet.
+    sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
+    if len(sheet_names) > 1:
+        raise ValueError(f"the output Google spreadsheet must contain one sheet only: {', '.join(sheet_names)}")
+    sheet_name = sheet_names[0]
+
+    spreadsheets_resource.values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f'{sheet_name}!{sheet_range}',
+        valueInputOption='RAW',
+        body={
+            'values': build_registration_rows(registration)
+        }) \
+        .execute()
+
+
+def load_registrations_from_csv_file(csv_file_path_name, locale):
+    """
+    Load the information of the family registrations from a CSV file.
+
+
+    :param csv_file_path_name: Absolute path and name of the CSV file.
+
+    :param locale: An object `Locale` corresponding to the language of the
+        online form from which the registration information have been
+        exported to the CSV file.
+
+
+    :return: A list of objects `Registration`.
+    """
+    values = read_csv_file_values(csv_file_path_name)
+    return [
+        Registration.from_row(row, locale)
+        for row in values
+        if row
+    ]
+
+
+def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, oauth2_token):
+    """
+    Load the information of the family registrations from the all sheets
+    of a Google Sheets document.
+
+
+    :param spreadsheet_id: Identification of the Google Sheets document that
+        contains the sheet where the responses to the localized registration
+        forms have been stored in.
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param oauth2_token: A valid OAuth2 token that allows access to the
+        specified Google Sheets document.
+
+
+    :return: A list of objects `Registration`.
+
+
+    :raise ValueError: If a sheet is not named after a locale.
+    """
+    # Retrieve the names of all the sheets contained in the specified Google
+    # Sheets document. These sheets MUST have been named after a locale that
+    # references the language in which the related registration form was
+    # written in.
+    sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
+
+    # Load the registrations from the sheets contained in the specified
+    # Google Sheets document.
+    registrations = []
+
+    for sheet_name in sheet_names:
+        logging.info(f'Fetching registrations from the sheet "{sheet_name}"...')
+
+        # Retrieve the locale associated to this sheet.
+        try:
+            locale = Locale(sheet_name)
+        except Locale.MalformedLocaleException:
+            raise ValueError(f"the Google sheet name {sheet_name} doesn't correspond to a locale")
+
+        registrations.extend([
+            Registration.from_row(row, locale)
+            for row in [
+                values
+                for values in read_google_sheet_values(
+                    spreadsheets_resource, spreadsheet_id, sheet_name, 'A2:AF')
+                if values
+            ]
+        ])
+
+    return registrations
+
+
 def prettify_registration_id(id_):
     """
     Convert a registration ID to human-readable string.
@@ -1206,17 +1447,262 @@ def prettify_registration_id(id_):
     return '-'.join(reversed(segments))
 
 
-def print_registration_forms(forms):
-    for form in forms:
-        print(f"===== Registration {prettify_registration_id(form.registration_id)} as {'UPMD' if form.is_ape_member else 'NOT UPMD'} =====")
 
-        print('CHILDREN:')
-        for i, child in enumerate(form.children, 1):
-            print(f"{i}. {child.fullname}, classe de {get_grade_name(child.grade_level)}")
+def process_registration_form(
+        form,
+        properties,
+        template_path,
+        author_name,
+        author_email_address,
+        spreadsheets_resource,
+        spreadsheet_id,
+        sheet_range):
+    send_registration_confirmation_email(form, properties, template_path, author_name, author_email_address)
+    insert_registration_to_master_list(form, spreadsheets_resource, spreadsheet_id, sheet_range)
 
-        print('PARENTS:')
-        for i, parent in enumerate(form.parents, 1):
-            print(f"{i}. {parent.fullname}, {parent.email_address}, {parent.phone_number}, {parent.home_address}")
+
+
+def read_csv_file_values(csv_file_path_name, has_header=True):
+    """
+    Read the values of the rows of a CSV file.
+
+
+    :param csv_file_path_name: Absolute path and name of the CSV file.
+
+    :param has_header: Indicate whether the very first row of the CSV file
+        corresponds to an header and needs to be ignored.
+
+
+    :return: A list of arrays (lists) of values
+    """
+    with open(csv_file_path_name) as fd:
+        reader = csv.reader(fd)
+
+        # Skip the very first header row.
+        if has_header:
+            next(reader)
+
+        rows = [values for values in reader]
+
+        return rows
+
+
+def read_google_sheet_values(
+        spreadsheets_resource,
+        spreadsheet_id,
+        sheet_name,
+        sheet_range):
+    """
+    Return the values of the ranges of the sheet of a Google Sheets document.
+
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param spreadsheet_id: Identification of a Google Sheet document.
+
+    :param sheet_name: Name of a sheet in this Google Sheet document.
+
+    :param sheet_range: String representation of the range to return
+        values.
+
+
+    :return: A list of a arrays (lists) of values.
+    """
+    sheet_range_values = spreadsheets_resource.values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f'{sheet_name}!{sheet_range}').execute()
+
+    range_values = sheet_range_values.get('values', [])
+
+    return range_values
+
+
+def run(arguments):
+    # Get the absolute file path name where the client application secrets
+    # (credentials) to access Google Sheets APi are stored in.
+    google_credentials_file_path_name = \
+        build_root_file_path_name(DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME) if not arguments.google_credentials_file_path_name \
+        else os.path.realpath(os.path.expanduser(arguments.google_credentials_file_path_name))
+
+    # Read the properties to connect to the Simple Mail Transfer Protocol
+    # (SMTP).
+    smtp_connection_properties = build_smtp_connection_properties(arguments)
+
+    # Get the absolute path of the folder where the e-mail templates and
+    # attachment files are stored in.
+    email_template_path = \
+        build_root_file_path_name(DEFAULT_TEMPLATE_RELATIVE_PATH) if not arguments.email_template_path \
+        else os.path.realpath(os.path.expanduser(arguments.email_template_path))
+
+    # Get the absolute path and name of a CSV file that contains the
+    # information entered by families to register to the school bus
+    # transportation service.  This CSV file has been exported from 1 sheet
+    # of the Google Sheets that collects the responses from the localized
+    # Google Forms (Korean, English, French, Vietnamese).
+    #
+    # Or get the identification of the Google Sheets itself that contains
+    # all the sheets the responses of all the localized Google Forms (this
+    # should be the preferred method).
+    csv_file_path_name = arguments.csv_file_path_name \
+        and os.path.realpath(os.path.expanduser(arguments.csv_file_path_name))
+
+    input_google_spreadsheet_id = arguments.input_google_spreadsheet_id
+
+    if csv_file_path_name and input_google_spreadsheet_id:
+        raise ValueError("Either a CSV file or a Google Sheet ID must be passed; not both")
+
+    if not csv_file_path_name and not input_google_spreadsheet_id:
+        raise ValueError("a CSV file or a Google spreadsheet ID must be passed")
+
+    # Get the identification of the Google Sheets where the script stores
+    # the information from all the registration forms submitted by the
+    # families.  If the user doesn't specify an identification, the script
+    # will print this information to the standard output.
+    output_google_spreadsheet_id = arguments.output_google_spreadsheet_id
+
+    # If an access to the input and/or output Google Sheets needs to be
+    # performed, retrieve the Oauth2 token that allows access to these
+    # documents.
+    if input_google_spreadsheet_id or output_google_spreadsheet_id:
+        if not google_credentials_file_path_name:
+            ValueError('a Google credentials file must be provided')
+
+        oauth2_token = get_google_oauth2_token(
+            GOOGLE_SPREADSHEET_SCOPES,
+            google_credentials_file_path_name)
+
+        service = googleapiclient.discovery.build('sheets', 'v4', credentials=oauth2_token)
+        spreadsheets_resource = service.spreadsheets()
+
+    # Load the registrations from the CSV file, if specified.
+    if csv_file_path_name:
+        if arguments.locale is None:
+            raise ValueError("a locale must be passed")
+
+        registrations = load_registrations_from_csv_file(
+            csv_file_path_name,
+            Locale(arguments.locale))
+
+    # Load the registrations from the input Google Sheets document, if
+    # specified.
+    elif input_google_spreadsheet_id:
+        if not google_credentials_file_path_name:
+            ValueError('a Google credentials file must be provided')
+
+        registrations = load_registrations_from_google_sheet(
+            input_google_spreadsheet_id,
+            spreadsheets_resource,
+            oauth2_token)
+
+
+    if output_google_spreadsheet_id:
+        # Retrieve the list of the registrations that have been already
+        # processed and stored in the master list (the ouput Google Sheets
+        # document).
+        processed_registration_ids = fetch_processed_registration_ids(
+            spreadsheets_resource,
+            output_google_spreadsheet_id)
+
+        # Determine the list of recent registrations not already processed.
+        new_registrations = [
+            registration
+            for registration in registrations
+            if registration.registration_id not in processed_registration_ids
+        ]
+
+        if new_registrations:
+            # Determine the number of rows that are currently used in the master
+            # list Google Sheets.  This number doesn't necessarily correspond to
+            # the number of registrations as a registration may contain several
+            # children.
+            row_count = get_sheet_used_row_count(
+                spreadsheets_resource,
+                output_google_spreadsheet_id)
+
+            for registration in new_registrations:
+                process_registration_form(
+                    registration,
+                    smtp_connection_properties,
+                    email_template_path,
+                    'UPMD',
+                    'transport@upmd.fr',
+                    spreadsheets_resource,
+                    output_google_spreadsheet_id,
+                    f'A{row_count + 1}')
+
+                row_count += len(registration.children)
+
+
+def send_registration_confirmation_email(
+        registration,
+        smtp_connection_properties,
+        template_path,
+        author_name,
+        author_email_address):
+    """
+    Send a confirmation e-mail to the parents of a family who submitted a
+    registration to the school bus transportation service.
+
+    The function optimizes the number of e-mail to be sent to the parents,
+    by grouping parents by their preferred languages.  If two parents (or
+    more) share the same preferred language, the function groups them in
+    a same list of recipients which one email, written in this language,
+    is sent to.
+
+
+    :param registration: An object `Registration`.
+
+    :param smtp_connection_properties: Properties to connect to the Simple
+        Mail Transfer Protocol (SMTP) server.
+
+    :param template_path: The absolute path of the folder where localized
+        e-mail templates and files to attach are stored in.
+
+    :param author_name: Complete name of the originator of the message.
+
+    :param author_email_address: Address of the mailbox to which the author
+        of the message suggests that replies be sent.
+    """
+    # Group the parents by their preferred languages. Well, they are
+    # supposed to be only 2 parents, but who knows in the future.
+    parents_locale_mapping = collections.defaultdict(list)
+    for parent in registration.parents:
+        parents_locale_mapping[parent.locale].append(parent)
+
+    for locale, parents in parents_locale_mapping.items():
+        email_subject, email_content = \
+            build_registration_confirmation_email_content(registration, locale, template_path)
+
+        parent_email_addresses = [parent.email_address for parent in parents]
+
+        logging.info(f'Sending email in "{locale}" to {", ".join(parent_email_addresses)}...')
+        email_util.send_email(
+            smtp_connection_properties.hostname,
+            smtp_connection_properties.username,
+            smtp_connection_properties.password,
+            author_name,
+            author_email_address,
+            parent_email_addresses,
+            email_subject,
+            email_content,
+            file_path_names=get_registration_confirmation_email_attachment_file_path_name(
+                registration.locale,
+                template_path),
+            port_number=smtp_connection_properties.port_number)
+
+
+# def print_registration_forms(forms):
+#     for form in forms:
+#         print(f"===== Registration {prettify_registration_id(form.registration_id)} as {'UPMD' if form.is_ape_member else 'NOT UPMD'} =====")
+#
+#         print('CHILDREN:')
+#         for i, child in enumerate(form.children, 1):
+#             print(f"{i}. {child.fullname}, classe de {get_grade_name(child.grade_level)}")
+#
+#         print('PARENTS:')
+#         for i, parent in enumerate(form.parents, 1):
+#             print(f"{i}. {parent.fullname}, {parent.email_address}, {parent.phone_number}, {parent.home_address}")
 
 
 # def generate_registration_csv(forms):
@@ -1237,210 +1723,3 @@ def print_registration_forms(forms):
 #
 #             writer.writerow(row)
 #             sys.stdin.flush()
-
-
-def generate_registration_form_values(form):
-    rows = []
-
-    for i, child in enumerate(form.children):
-        row = [
-            form.registration_id if i == 0 else '',
-            form.registration_time.strftime("%Y-%m-%d %H:%M:%S") if i == 0 else '',
-            child.fullname,
-            child.dob.strftime('%Y-%m-%d'),
-            get_grade_name(child.grade_level)
-        ]
-
-        for j, fields in enumerate(Registration.PARENTS_FIELDS):
-            if i == 0 and j < len(form.parents):
-                parent = form.parents[j]
-                row.extend([
-                    parent.fullname,
-                    parent.email_address,
-                    parent.phone_number,
-                    parent.home_address
-                ])
-            else:
-                row.extend([''] * 4)  # Fullname, email, phone, address
-
-        row.append(('Y' if form.is_ape_member else 'N') if i == 0 else '')
-
-        rows.append(row)
-
-    return rows
-
-
-def parse_arguments():
-    """
-    Convert argument strings to objects and assign them as attributes of
-    the namespace.
-
-
-    @return: an instance ``argparse.Namespace`` corresponding to the
-        populated namespace.
-    """
-    parser = argparse.ArgumentParser(description="School Data Importer")
-
-    parser.add_argument(
-        '-f',
-        '--file',
-        dest='csv_file_path_name',
-        metavar='FILE',
-        required=False,
-        help="specify the path and name of the CSV file containing information about "
-             "children and parents")
-
-    parser.add_argument(
-        '-l',
-        '--locale',
-        dest='locale',
-        metavar='LOCALE',
-        required=False,
-        help="specify the locale (ISO 639-3 code) corresponding to the language of "
-             "the registration form")
-
-    parser.add_argument(
-        '-c',
-        '--google-credentials',
-        dest='google_credentials_file_path_name',
-        metavar='FILE',
-        required=False,
-        default='credentials.json',
-        help="absolute path and name of the Google credentials file")
-
-    parser.add_argument(
-        '-i',
-        '--input-google-spreadsheet_id',
-        dest='input_google_spreadsheet_id',
-        metavar='ID',
-        required=False,
-        help="specify the identification of the Google spreadsheet containing the "
-             "responses to the registration forms"
-    )
-
-    parser.add_argument(
-        '-o',
-        '--output-google-spreadsheet_id',
-        dest='output_google_spreadsheet_id',
-        metavar='ID',
-        required=False,
-        help="specify the identification of the Google spreadsheet to populate "
-             "children and parents from the registration forms"
-    )
-
-    # Parse the properties to connect to the Simple Mail Transfer Protocol
-    # (SMTP) server.
-    parser.add_argument(
-        '--smtp-hostname',
-        required=False,
-        help="specify the host name of the machine on which the SMTP server is "
-            "running.")
-
-    parser.add_argument(
-        '--smtp-username',
-        required=False,
-        help="specify the username/email address to connect to the SMPT server.")
-
-    parser.add_argument(
-        '--smtp-port',
-        required=False,
-        type=int,
-        default=DEFAULT_SMTP_PORT,
-        help="specify the TCP port or the local Unix-domain socket file extension on "
-             "which the SMTP server is listening for connections.")
-
-    parser.add_argument(
-        '--email-template-path',
-        required=True,
-        help='specify the absolute path name of the localised HTML e-mail templates.')
-
-
-    return parser.parse_args()
-
-
-def build_smtp_connection_properties(arguments, smtp_settings_file_path_name='smtp.pickle'):
-    properties = None
-
-    if os.path.exists(smtp_settings_file_path_name):
-        with open(smtp_settings_file_path_name, 'rb') as fd:
-            properties = pickle.load(fd)
-
-    username = arguments.smtp_username \
-        or (properties and properties.username) \
-        or input("Enter your SMTP username: ")
-
-    password = (properties and properties.password) \
-        or getpass.getpass("Enter your SMTP password: ")
-    hostname = (properties and properties.hostname) \
-        or arguments.smtp_hostname or input("Enter the SMPT hostname: ")
-
-    port_number = (properties and properties.port_number) \
-        or int(arguments.smtp_port or DEFAULT_SMTP_PORT)
-
-    new_properties = SmtpConnectionProperties(hostname, username, password, port_number)
-
-    # Save the SMTP connection properties for the next run.
-    if properties is None or properties != new_properties:
-        with open('smtp.pickle', 'wb') as fd:
-            pickle.dump(new_properties, fd)
-
-    return new_properties
-
-
-def read_csv_file_values(csv_file_path_name, has_header=True):
-    with open(csv_file_path_name) as fd:
-        reader = csv.reader(fd)
-
-        # Skip the very first header row.
-        if has_header:
-            next(reader)
-
-        return [values for values in reader]
-
-
-def read_google_sheet_values(
-        spreadsheets_resource,
-        spreadsheet_id,
-        sheet_name,
-        sheet_range):
-    sheet_range_values = spreadsheets_resource.values().get(
-        spreadsheetId=spreadsheet_id,
-        range=f'{sheet_name}!{sheet_range}').execute()
-
-    return sheet_range_values.get('values', [])
-
-
-def setup_logger(
-        logging_formatter=DEFAULT_LOGGING_FORMATTER,
-        logging_level=logging.INFO,
-        logger_name=None):
-    """
-    Setup a logging handler that sends logging output to the system's
-    standard output.
-
-
-    :param logging_formatter: An object `Formatter` to set for this handler.
-
-    :param logger_name: Name of the logger to add the logging handler to.
-        If `logger_name` is `None`, the function attaches the logging
-        handler to the root logger of the hierarchy.
-
-    :param logging_level: The threshold for the logger to `level`.  Logging
-        messages which are less severe than `level` will be ignored;
-        logging messages which have severity level or higher will be
-        emitted by whichever handler or handlers service this logger,
-        unless a handler’s level has been set to a higher severity level
-        than `level`.
-
-
-    :return: An object `Logger`.
-    """
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging_level)
-    logger.addHandler(get_console_handler(logging_formatter=logging_formatter))
-    logger.propagate = False
-    return logger
-
-
-if __name__ == "__main__":
-    main()
