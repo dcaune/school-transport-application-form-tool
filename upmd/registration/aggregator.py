@@ -1447,19 +1447,42 @@ def prettify_registration_id(id_):
     return '-'.join(reversed(segments))
 
 
-
-def process_registration_form(
-        form,
-        properties,
+def process_registration(
+        registration,
+        smtp_connection_properties,
         template_path,
         author_name,
         author_email_address,
         spreadsheets_resource,
         spreadsheet_id,
         sheet_range):
-    send_registration_confirmation_email(form, properties, template_path, author_name, author_email_address)
-    insert_registration_to_master_list(form, spreadsheets_resource, spreadsheet_id, sheet_range)
+    """
+    Process a new registration.
 
+
+    :param registration: An object `Registration`.
+
+    :param smtp_connection_properties: Properties to connect to the Simple
+        Mail Transfer Protocol (SMTP) server.
+
+    :param template_path: The absolute path of the folder where localized
+        e-mail templates and files to attach are stored in.
+
+    :param author_name: Complete name of the originator of the message.
+
+    :param author_email_address: Address of the mailbox to which the author
+        of the message suggests that replies be sent.
+
+    :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
+        returned by the Google API client library.
+
+    :param spreadsheet_id: Identification of a Google Sheet document.
+
+    :param sheet_range: Range (a row) in the master list sheet where to
+        start inserting the information of this registration.
+    """
+    send_registration_confirmation_email(registration, smtp_connection_properties, template_path, author_name, author_email_address)
+    insert_registration_to_master_list(registration, spreadsheets_resource, spreadsheet_id, sheet_range)
 
 
 def read_csv_file_values(csv_file_path_name, has_header=True):
@@ -1621,7 +1644,7 @@ def run(arguments):
                 output_google_spreadsheet_id)
 
             for registration in new_registrations:
-                process_registration_form(
+                process_registration(
                     registration,
                     smtp_connection_properties,
                     email_template_path,
@@ -1690,36 +1713,3 @@ def send_registration_confirmation_email(
                 registration.locale,
                 template_path),
             port_number=smtp_connection_properties.port_number)
-
-
-# def print_registration_forms(forms):
-#     for form in forms:
-#         print(f"===== Registration {prettify_registration_id(form.registration_id)} as {'UPMD' if form.is_ape_member else 'NOT UPMD'} =====")
-#
-#         print('CHILDREN:')
-#         for i, child in enumerate(form.children, 1):
-#             print(f"{i}. {child.fullname}, classe de {get_grade_name(child.grade_level)}")
-#
-#         print('PARENTS:')
-#         for i, parent in enumerate(form.parents, 1):
-#             print(f"{i}. {parent.fullname}, {parent.email_address}, {parent.phone_number}, {parent.home_address}")
-
-
-# def generate_registration_csv(forms):
-#     writer = csv.writer(sys.stdout, quoting=csv.QUOTE_ALL)
-#
-#     for form in forms:
-#         for i, child in enumerate(form.children):
-#             row = [form.registration_id if i == 0 else '', child.fullname, child.dob, get_grade_name(child.grade_level)]
-#
-#             for j, fields in enumerate(RegistrationForm.PARENTS_FIELDS):
-#                 if i == 0 and j < len(form.parents):
-#                     parent = form.parents[j]
-#                     row += [parent.fullname, parent.email_address, parent.phone_number, parent.home_address]
-#                 else:
-#                     row += ['' for k in range(len(fields))]
-#
-#             row.append(('Y' if form.is_ape_member else 'N') if i == 0 else '')
-#
-#             writer.writerow(row)
-#             sys.stdin.flush()
