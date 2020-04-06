@@ -84,7 +84,7 @@ Rendez-vous à l'adresse [https://developers.google.com/sheets/api/quickstart/py
 | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
 | ![](doc/enable_the_google_sheets_api_01.png) | ![](doc/enable_the_google_sheets_api_02.png) | ![](doc/enable_the_google_sheets_api_03.png) |
 
-Copiez le fichier téléchargé `credentials.json` et copiez-le dans le répertoire où vous avez installé **UPMD School Bus Registration Aggregator**.
+Copiez le fichier téléchargé `credentials.json` et placez-le dans le répertoire où vous avez installé **UPMD School Bus Registration Aggregator**.
 
 ## Execution
 
