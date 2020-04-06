@@ -76,11 +76,15 @@ Installing dependencies from Pipfile.lock (a01b6b)…
 
 ## Configuration
 
-Vous aurez besoin d'autoriser cette application à utiliser l'API Google Sheets. Pour ce faire vous aurez besoin d'enregister un nouveau _Cloud Platform_ ce qui activera automatiquement l'API Google Sheets pour ce projet. Rendez-vous à l'adresse [https://developers.google.com/sheets/api/quickstart/python](https://developers.google.com/sheets/api/quickstart/python) et cliquez sur le bouton **Enable the Google Sheets API** :
+Vous aurez besoin d'autoriser cette application à utiliser l'API Google Sheets. Pour ce faire vous aurez besoin d'enregister un nouveau _Cloud Platform_ ce qui activera automatiquement l'API Google Sheets pour ce projet.
+
+Rendez-vous à l'adresse [https://developers.google.com/sheets/api/quickstart/python](https://developers.google.com/sheets/api/quickstart/python) et cliquez sur le bouton **Enable the Google Sheets API** :
 
 |                                              |                                              |                                              |
 | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
 | ![](doc/enable_the_google_sheets_api_01.png) | ![](doc/enable_the_google_sheets_api_02.png) | ![](doc/enable_the_google_sheets_api_03.png) |
+
+Copiez le fichier téléchargé `credentials.json` et copiez-le dans le répertoire où vous avez installé **UPMD School Bus Registration Aggregator**.
 
 ## Execution
 
@@ -124,3 +128,17 @@ optional arguments:
                         specify the absolute path name of the localized HTML
                         e-mail templates.
 ```
+
+## Authorisation d'Accès aux Documents Google Sheets
+
+La première fois que vous exécuterez l'application, vous aurez besoin d'autoriser l'application **UPMD School Bus Registration Aggregator** à accéder aux documents Google Sheets, celui dans lequel les réponses des parents aux formulairex d'inscription sont enregistrées, et celui dans lequel l'application **UPMD School Bus Registration Aggregator** va aggréger toutes les réponses (encore appelé _Master List_) :
+
+| Réponses aux Formulaires                                 | _Master List_                                          |
+| -------------------------------------------------------- | ------------------------------------------------------ |
+| ![](doc/upmd_school_bus_registration_forms_response.png) | ![](doc/upmd_school_bus_registrations_master_list.jpg) |
+
+Lors de sa première exécution, l'application **UPMD School Bus Registration Aggregator** va lancer votre navigateur préféré pour vous permettre de vous connecter à votre compte Google Mail ou Google Suite (association) et de donner l'autorisation demandée :
+
+|                               |                               |                               |
+| ----------------------------- | ----------------------------- | ----------------------------- |
+| ![](doc/google_oauth2_01.png) | ![](doc/google_oauth2_02.png) | ![](doc/google_oauth2_03.png) |
