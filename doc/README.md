@@ -2,6 +2,8 @@
 
 L'[Union des Parents d'Élèves](https://www.upmd.fr) du [Lycée Français International Marguerite Duras](http://lfiduras.com) met en place un formulaire en ligne permettant aux parents d'enregistrer leur(s) enfant(s) au transport scolaire.
 
+![School Bus Registrations Aggregator Diagram](doc/school_bus_registrations_aggregator.png)
+
 Ce formulaire est décomposé en plusieurs sections dynamiques permettant à une famille d'inscrire jusqu'à 4 enfants, en référençant 1 ou 2 parents :
 
 | Accueil                                           | Premier Enfant                                    | Premier Parent                                    | Cotisation Obligatoire                            | Confirmation de la Soumission                     |
