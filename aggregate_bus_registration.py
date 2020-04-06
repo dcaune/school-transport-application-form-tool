@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2020 Intek Institute.  All rights reserved.
 #
@@ -166,7 +167,7 @@ def setup_logger(
         messages which are less severe than `level` will be ignored;
         logging messages which have severity level or higher will be
         emitted by whichever handler or handlers service this logger,
-        unless a handler’s level has been set to a higher severity level
+        unless a handler's level has been set to a higher severity level
         than `level`.
 
 
