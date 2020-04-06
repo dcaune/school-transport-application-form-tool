@@ -107,26 +107,28 @@ optional arguments:
                         the language of the registration form
   -c FILE, --google-credentials FILE
                         absolute path and name of the Google credentials file
-  -i ID, --input-google-spreadsheet_id ID
+  -i ID, --input-google-spreadsheet-id ID
                         specify the identification of the Google spreadsheet
                         containing the responses to the registration forms
-  -o ID, --output-google-spreadsheet_id ID
+  -o ID, --output-google-spreadsheet-id ID
                         specify the identification of the Google spreadsheet
                         to populate children and parents from the registration
                         forms
   --smtp-hostname SMTP_HOSTNAME
                         specify the host name of the machine on which the SMTP
-                        server is running.
+                        server is running
   --smtp-username SMTP_USERNAME
-                        Specify the username/email address to connect to the
-                        SMTP server.
+                        specify the username/email address to connect to the
+                        SMPT server
   --smtp-port SMTP_PORT
                         specify the TCP port or the local Unix-domain socket
                         file extension on which the SMTP server is listening
-                        for connections.
+                        for connections
   --email-template-path EMAIL_TEMPLATE_PATH
                         specify the absolute path name of the localized HTML
-                        e-mail templates.
+                        e-mail templates
+  --loop                require the script to loop for ever until the user
+                        terminates it with Ctrl-C
 ```
 
 ### Saisie des Informations pour envoyer les Courriels aux Parents
@@ -140,7 +142,7 @@ Lors de sa première exécution, l'application **UPMD School Bus Registration Ag
 Par exemple :
 
 ```bash
-$ aggregate_bus_registration
+(upmd) bash-3.2$  aggregate_bus_registration
 Enter your SMTP username: botnet@upmd.fr
 Enter your SMTP password:
 Enter the SMTP hostname: smtp.gmail.com
@@ -160,4 +162,25 @@ Lors de sa première exécution, l'application **UPMD School Bus Registration Ag
 | ----------------------------- | ----------------------------- | ----------------------------- |
 | ![](doc/google_oauth2_01.png) | ![](doc/google_oauth2_02.png) | ![](doc/google_oauth2_03.png) |
 
-###
+### Exécution continuelle de l'Application
+
+Vous pouvez exécuter l'application **UPMD School Bus Registration Aggregator** avec l'option `--loop` pour qu'elle ne s'arrête jamais :
+
+```bash
+(upmd) bash-3.2$ aggregate_bus_registration -i 1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs -o 1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU --loop
+
+(...)
+2020-04-06 15:03:01,209 [INFO] URL being requested: GET https://www.googleapis.com/discovery/v1/apis/sheets/v4/rest
+2020-04-06 15:03:02,514 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs?alt=json
+2020-04-06 15:03:03,734 [INFO] Fetching registrations from the sheet "kor"...
+2020-04-06 15:03:03,747 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/kor%21A2%3AAF?alt=json
+2020-04-06 15:03:04,237 [INFO] Fetching registrations from the sheet "vie"...
+2020-04-06 15:03:04,242 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/vie%21A2%3AAF?alt=json
+2020-04-06 15:03:04,747 [INFO] Fetching registrations from the sheet "fra"...
+2020-04-06 15:03:04,749 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/fra%21A2%3AAF?alt=json
+2020-04-06 15:03:06,056 [INFO] Fetching registrations from the sheet "eng"...
+2020-04-06 15:03:06,062 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/eng%21A2%3AAF?alt=json
+2020-04-06 15:03:06,488 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU?alt=json
+2020-04-06 15:03:07,517 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A3%3AM?alt=json
+2020-04-06 15:03:07,966 [INFO] Breathing a little bit...
+```
