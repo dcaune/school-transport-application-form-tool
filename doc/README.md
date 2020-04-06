@@ -96,7 +96,7 @@ usage: aggregate_bus_registration [-h] [-f FILE] [-l LOCALE] [-c FILE] [-i ID]
                                   [--smtp-port SMTP_PORT]
                                   --email-template-path EMAIL_TEMPLATE_PATH
 
-School Data Importer
+School Bus Registration Aggregator
 
 optional arguments:
   -h, --help            show this help message and exit
