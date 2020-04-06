@@ -129,7 +129,24 @@ optional arguments:
                         e-mail templates.
 ```
 
-## Authorisation d'Accès aux Documents Google Sheets
+### Saisie des Informations pour envoyer les Courriels aux Parents
+
+L'application **UPMD School Bus Registration Aggregator** va récupérer toutes les inscriptions des familles sauvegardées dans le document Google Sheets contenant les réponses aux différents formulaires. Cette application regroupera toutes ces inscriptions dans le second document Google Sheets (encore appelé _Master List_).
+
+Pour chacune de ces inscriptions, l'application enverra un courriel de confirmation de réception à chacune des familles. L'application a besoin de connaître les propriétés de connexion à un serveur [_Simple Mail Transfer Protocol_ (SMTP)](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) pour pouvoir envoyer les courriels.
+
+Lors de sa première exécution, l'application **UPMD School Bus Registration Aggregator** vous demandera de saisir ces informations :
+
+Par exemple :
+
+```bash
+$ aggregate_bus_registration
+Enter your SMTP username: botnet@upmd.fr
+Enter your SMTP password:
+Enter the SMTP hostname: smtp.gmail.com
+```
+
+### Authorisation d'Accès aux Documents Google Sheets
 
 La première fois que vous exécuterez l'application, vous aurez besoin d'autoriser l'application **UPMD School Bus Registration Aggregator** à accéder aux documents Google Sheets, celui dans lequel les réponses des parents aux formulairex d'inscription sont enregistrées, et celui dans lequel l'application **UPMD School Bus Registration Aggregator** va aggréger toutes les réponses (encore appelé _Master List_) :
 
@@ -142,3 +159,5 @@ Lors de sa première exécution, l'application **UPMD School Bus Registration Ag
 |                               |                               |                               |
 | ----------------------------- | ----------------------------- | ----------------------------- |
 | ![](doc/google_oauth2_01.png) | ![](doc/google_oauth2_02.png) | ![](doc/google_oauth2_03.png) |
+
+###
