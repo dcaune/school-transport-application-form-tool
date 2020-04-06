@@ -68,7 +68,7 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     name='upmd-schoolbus-registration-aggregator',
     packages=setuptools.find_packages(),
-    package_data={'': ['templates/*.*']},
+    package_data={'.': ['templates/*.*']},
     platforms=['any'],
     project_urls={
         'Bug Tracker': 'https://github.com/dcaune/upmd-school-bus-registration-aggregator/issues',
