@@ -919,22 +919,6 @@ def build_registration_rows(registration):
     return rows
 
 
-def build_root_file_path_name(file_name):
-    """
-    Return the absolute path and name of a file located at the root of the
-    project.
-
-
-    :param file_name: the name of a file.
-
-
-    :return: Absolute path and name of the file.
-    """
-    return os.path.join(
-        os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__)),
-        file_name)
-
-
 def build_smtp_connection_properties(
         arguments,
         smtp_connection_properties_file_path_name=None):
@@ -1575,7 +1559,7 @@ def run(arguments):
     # Get the absolute path of the folder where the e-mail templates and
     # attachment files are stored in.
     email_template_path = \
-        build_root_file_path_name(DEFAULT_TEMPLATE_RELATIVE_PATH) if not arguments.email_template_path \
+        os.path.join(os.path.dirname(__file__), DEFAULT_TEMPLATE_RELATIVE_PATH) if not arguments.email_template_path \
         else os.path.realpath(os.path.expanduser(arguments.email_template_path))
 
     # Get the absolute path and name of a CSV file that contains the
