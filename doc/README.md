@@ -21,7 +21,7 @@ L'UPMD utilise 4 Google Forms pour implémenter ces 4 formulaires dynamiques. Ce
 
 Le script en ligne de commande (CLI) `aggregate_bus_registration` permet d'aggréger les réponses aux formulaires en un seul jeu de données.
 
-## Installation et Configuration
+## Installation
 
 L'application **UPMD School Bus Registration Aggregator** est un script [Python(https://fr.wikipedia.org/wiki/Python_(langage))] de type [_interface en ligne de commande_](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande).
 
@@ -73,6 +73,14 @@ Updated Pipfile.lock (a01b6b)!
 Installing dependencies from Pipfile.lock (a01b6b)…
   🐍   ▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉ 45/45 — 00:00:12
 ```
+
+## Configuration
+
+Vous aurez besoin d'autoriser cette application à utiliser l'API Google Sheets. Pour ce faire vous aurez besoin d'enregister un nouveau _Cloud Platform_ ce qui activera automatiquement l'API Google Sheets pour ce projet. Rendez-vous à l'adresse [https://developers.google.com/sheets/api/quickstart/python](https://developers.google.com/sheets/api/quickstart/python) et cliquez sur le bouton **Enable the Google Sheets API** :
+
+|                                              |                                              |                                              |
+| -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| ![](doc/enable_the_google_sheets_api_01.png) | ![](doc/enable_the_google_sheets_api_02.png) | ![](doc/enable_the_google_sheets_api_03.png) |
 
 ## Execution
 
