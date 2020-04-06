@@ -32,7 +32,7 @@ __email__ = "daniel.caune@gmail.com"
 __license__ = "MIT"
 __maintainer__ = "Daniel CAUNE"
 __status__ = "Production"
-__version__ = '1.0.3'
+__version__ = '1.1.0'
 
 
 # Base directory where this file is located.
@@ -68,7 +68,7 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     name='upmd-schoolbus-registration-aggregator',
     packages=setuptools.find_packages(),
-    package_data={'upmd.registration': ['templates/*.html, templates/*.jpg']},
+    package_data={'upmd.registration': ['templates/*.*']},
     platforms=['any'],
     project_urls={
         'Bug Tracker': 'https://github.com/dcaune/upmd-school-bus-registration-aggregator/issues',
@@ -77,5 +77,6 @@ setuptools.setup(
     },
     python_requires='>=3.6',
     scripts=['bin/aggregate_bus_registration'],
-    version=__version__
+    version=__version__,
+    url='https://github.com/dcaune/upmd-school-bus-registration-aggregator',
 )

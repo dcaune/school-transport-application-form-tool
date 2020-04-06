@@ -170,17 +170,24 @@ Vous pouvez exécuter l'application **UPMD School Bus Registration Aggregator** 
 (upmd) bash-3.2$ aggregate_bus_registration -i 1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs -o 1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU --loop
 
 (...)
-2020-04-06 15:03:01,209 [INFO] URL being requested: GET https://www.googleapis.com/discovery/v1/apis/sheets/v4/rest
-2020-04-06 15:03:02,514 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs?alt=json
-2020-04-06 15:03:03,734 [INFO] Fetching registrations from the sheet "kor"...
-2020-04-06 15:03:03,747 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/kor%21A2%3AAF?alt=json
-2020-04-06 15:03:04,237 [INFO] Fetching registrations from the sheet "vie"...
-2020-04-06 15:03:04,242 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/vie%21A2%3AAF?alt=json
-2020-04-06 15:03:04,747 [INFO] Fetching registrations from the sheet "fra"...
-2020-04-06 15:03:04,749 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/fra%21A2%3AAF?alt=json
-2020-04-06 15:03:06,056 [INFO] Fetching registrations from the sheet "eng"...
-2020-04-06 15:03:06,062 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/eng%21A2%3AAF?alt=json
-2020-04-06 15:03:06,488 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU?alt=json
-2020-04-06 15:03:07,517 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A3%3AM?alt=json
-2020-04-06 15:03:07,966 [INFO] Breathing a little bit...
+2020-04-06 15:48:45,743 [INFO] URL being requested: GET https://www.googleapis.com/discovery/v1/apis/sheets/v4/rest
+2020-04-06 15:48:47,084 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs?alt=json
+2020-04-06 15:48:48,112 [INFO] Fetching registrations from the sheet "kor"...
+2020-04-06 15:48:48,119 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/kor%21A2%3AAF?alt=json
+2020-04-06 15:48:49,500 [INFO] Fetching registrations from the sheet "vie"...
+2020-04-06 15:48:49,504 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/vie%21A2%3AAF?alt=json
+2020-04-06 15:48:50,419 [INFO] Fetching registrations from the sheet "fra"...
+2020-04-06 15:48:50,422 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/fra%21A2%3AAF?alt=json
+2020-04-06 15:48:51,308 [INFO] Fetching registrations from the sheet "eng"...
+2020-04-06 15:48:51,311 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1hhEeBCyTu6rsEkDQ_0DHzbizdLvNh2SP5hsgZk0YLxs/values/eng%21A2%3AAF?alt=json
+2020-04-06 15:48:51,750 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU?alt=json
+2020-04-06 15:48:52,571 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A3%3AM?alt=json
+2020-04-06 15:48:53,083 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU?alt=json
+2020-04-06 15:48:53,557 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A1%3AA?alt=json
+2020-04-06 15:48:54,025 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A9%3AM9?alt=json
+2020-04-06 15:48:54,413 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A10%3AM10?alt=json
+2020-04-06 15:48:54,725 [INFO] Sending email in "fra" to daniel.caune@gmail.com...
+2020-04-06 15:49:09,167 [INFO] URL being requested: GET https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU?alt=json
+2020-04-06 15:49:10,082 [INFO] URL being requested: PUT https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A10?valueInputOption=RAW&alt=json
+2020-04-06 15:49:10,491 [INFO] Breathing a little bit...
 ```
