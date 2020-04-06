@@ -64,7 +64,7 @@ DEFAULT_SMTP_CONNECTION_PROPERTIES_FILE_NAME = 'smtp_connection_properties.pickl
 
 # Default relative path of the folder where the e-mail templates and
 # attachment files are stored in.
-DEFAULT_TEMPLATE_RELATIVE_PATH = './templates'
+DEFAULT_TEMPLATE_RELATIVE_PATH = 'templates'
 
 # Supported locale to format parents and children' fullname.
 ENGLISH_LOCALE = Locale('eng')
@@ -821,6 +821,20 @@ class Registration:
         return self.__registration_time
 
 
+def build_current_directory_path_name(file_name):
+    """
+    Return the absolute path and name of a file located in the current
+    directory of the user.
+
+
+    :param file_name: the name of a file.
+
+
+    :return: Absolute path and name of the file.
+    """
+    return os.path.join(os.getcwd(), file_name)
+
+
 def build_registration_confirmation_email_content(registration, locale, template_path):
     """
     Build the localized content of a registration confirmation e-mail to
@@ -940,7 +954,7 @@ def build_smtp_connection_properties(
     """
     if smtp_connection_properties_file_path_name is None:
         smtp_connection_properties_file_path_name = \
-            build_root_file_path_name(DEFAULT_SMTP_CONNECTION_PROPERTIES_FILE_NAME)
+            build_current_directory_path_name(DEFAULT_SMTP_CONNECTION_PROPERTIES_FILE_NAME)
 
     properties = None
 
@@ -1166,10 +1180,12 @@ def get_google_oauth2_token(
     :return: The OAuth2 credentials.
     """
     if google_credentials_file_path_name is None:
-        google_credentials_file_path_name = build_root_file_path_name(DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME)
+        google_credentials_file_path_name = \
+            build_current_directory_path_name(DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME)
 
     if google_oauth2_token_file_path_name is None:
-        google_oauth2_token_file_path_name = build_root_file_path_name(DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME)
+        google_oauth2_token_file_path_name = \
+            build_current_directory_path_name(DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME)
 
     oauth2_token = None
 
@@ -1549,7 +1565,7 @@ def run(arguments):
     # Get the absolute file path name where the client application secrets
     # (credentials) to access Google Sheets APi are stored in.
     google_credentials_file_path_name = \
-        build_root_file_path_name(DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME) if not arguments.google_credentials_file_path_name \
+        build_current_directory_path_name(DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME) if not arguments.google_credentials_file_path_name \
         else os.path.realpath(os.path.expanduser(arguments.google_credentials_file_path_name))
 
     # Read the properties to connect to the Simple Mail Transfer Protocol
