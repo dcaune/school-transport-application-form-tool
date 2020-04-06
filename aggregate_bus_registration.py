@@ -69,7 +69,7 @@ def parse_arguments():
     @return: an instance `argparse.Namespace` corresponding to the
         populated namespace.
     """
-    parser = argparse.ArgumentParser(description="School Data Importer")
+    parser = argparse.ArgumentParser(description="School Bus Registration Aggregator")
 
     parser.add_argument(
         '-f',
@@ -100,7 +100,7 @@ def parse_arguments():
 
     parser.add_argument(
         '-i',
-        '--input-google-spreadsheet_id',
+        '--input-google-spreadsheet-id',
         dest='input_google_spreadsheet_id',
         metavar='ID',
         required=False,
@@ -110,7 +110,7 @@ def parse_arguments():
 
     parser.add_argument(
         '-o',
-        '--output-google-spreadsheet_id',
+        '--output-google-spreadsheet-id',
         dest='output_google_spreadsheet_id',
         metavar='ID',
         required=False,
@@ -124,12 +124,12 @@ def parse_arguments():
         '--smtp-hostname',
         required=False,
         help="specify the host name of the machine on which the SMTP server is "
-            "running.")
+             "running")
 
     parser.add_argument(
         '--smtp-username',
         required=False,
-        help="specify the username/email address to connect to the SMPT server.")
+        help="specify the username/email address to connect to the SMPT server")
 
     parser.add_argument(
         '--smtp-port',
@@ -137,13 +137,18 @@ def parse_arguments():
         type=int,
         default=DEFAULT_SMTP_PORT,
         help="specify the TCP port or the local Unix-domain socket file extension on "
-             "which the SMTP server is listening for connections.")
+             "which the SMTP server is listening for connections")
 
     parser.add_argument(
         '--email-template-path',
-        required=True,
-        help='specify the absolute path name of the localised HTML e-mail templates.')
+        required=False,
+        help='specify the absolute path name of the localized HTML e-mail templates')
 
+    parser.add_argument(
+        '--loop',
+        action='store_true',
+        required=False,
+        help='require the script to loop for ever until the user terminates it with Ctrl-C')
 
     return parser.parse_args()
 

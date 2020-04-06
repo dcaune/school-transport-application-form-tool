@@ -55,6 +55,9 @@ DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME = 'oauth2_token.pickle'
 # [https://console.cloud.google.com/apis/credentials]
 DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME = 'google_credentials.json'
 
+# Default time in seconds between two consecutive executions.
+DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION = 60
+
 # Default name of the file where the connection properties to the
 # Simple Mail Transfer Protocol (SMTP) is stored in.
 DEFAULT_SMTP_CONNECTION_PROPERTIES_FILE_NAME = 'smtp_connection_properties.pickle'
@@ -626,8 +629,9 @@ class Registration:
         checksum = hashlib.md5(parent_email_addresses.encode()).hexdigest()
         registration_id = int(checksum, 16) % (10 ** digit_number)
 
-        if registration_id in cls.__registration_ids_cache:
-            raise ValueError(f"the generated registration ID {registration_id} is already used ({parent_email_addresses})")
+        # @todo: Check elsewhere
+        # if registration_id in cls.__registration_ids_cache:
+        #     raise ValueError(f"the generated registration ID {registration_id} is already used ({parent_email_addresses})")
 
         cls.__registration_ids_cache.add(registration_id)
 
@@ -1578,6 +1582,10 @@ def run(arguments):
     if not csv_file_path_name and not input_google_spreadsheet_id:
         raise ValueError("a CSV file or a Google spreadsheet ID must be passed")
 
+    # Check whether the script needs to loop for even until the user
+    # decides to stop it
+    does_loop = arguments.loop and input_google_spreadsheet_id
+
     # Get the identification of the Google Sheets where the script stores
     # the information from all the registration forms submitted by the
     # families.  If the user doesn't specify an identification, the script
@@ -1598,63 +1606,74 @@ def run(arguments):
         service = googleapiclient.discovery.build('sheets', 'v4', credentials=oauth2_token)
         spreadsheets_resource = service.spreadsheets()
 
-    # Load the registrations from the CSV file, if specified.
-    if csv_file_path_name:
-        if arguments.locale is None:
-            raise ValueError("a locale must be passed")
+    while True:
+        try:
+            # Load the registrations from the CSV file, if specified.
+            if csv_file_path_name:
+                if arguments.locale is None:
+                    raise ValueError("a locale must be passed")
 
-        registrations = load_registrations_from_csv_file(
-            csv_file_path_name,
-            Locale(arguments.locale))
+                registrations = load_registrations_from_csv_file(
+                    csv_file_path_name,
+                    Locale(arguments.locale))
 
-    # Load the registrations from the input Google Sheets document, if
-    # specified.
-    elif input_google_spreadsheet_id:
-        if not google_credentials_file_path_name:
-            ValueError('a Google credentials file must be provided')
+            # Load the registrations from the input Google Sheets document, if
+            # specified.
+            elif input_google_spreadsheet_id:
+                if not google_credentials_file_path_name:
+                    ValueError('a Google credentials file must be provided')
 
-        registrations = load_registrations_from_google_sheet(
-            input_google_spreadsheet_id,
-            spreadsheets_resource,
-            oauth2_token)
-
-
-    if output_google_spreadsheet_id:
-        # Retrieve the list of the registrations that have been already
-        # processed and stored in the master list (the ouput Google Sheets
-        # document).
-        processed_registration_ids = fetch_processed_registration_ids(
-            spreadsheets_resource,
-            output_google_spreadsheet_id)
-
-        # Determine the list of recent registrations not already processed.
-        new_registrations = [
-            registration
-            for registration in registrations
-            if registration.registration_id not in processed_registration_ids
-        ]
-
-        if new_registrations:
-            # Determine the number of rows that are currently used in the master
-            # list Google Sheets.  This number doesn't necessarily correspond to
-            # the number of registrations as a registration may contain several
-            # children.
-            row_count = get_sheet_used_row_count(
-                spreadsheets_resource,
-                output_google_spreadsheet_id)
-
-            for registration in new_registrations:
-                process_registration(
-                    registration,
-                    smtp_connection_properties,
-                    email_template_path,
-                    'UPMD',
-                    'transport@upmd.fr',
+                registrations = load_registrations_from_google_sheet(
+                    input_google_spreadsheet_id,
                     spreadsheets_resource,
-                    output_google_spreadsheet_id,
-                    f'A{row_count + 1}')
+                    oauth2_token)
 
-                row_count += len(registration.children)
+            # Process and store the registrations in the master list.
+            if output_google_spreadsheet_id:
+                # Retrieve the list of the registrations that have been already
+                # processed and stored in the master list (the ouput Google Sheets
+                # document).
+                processed_registration_ids = fetch_processed_registration_ids(
+                    spreadsheets_resource,
+                    output_google_spreadsheet_id)
+
+                # Determine the list of recent registrations not already processed.
+                new_registrations = [
+                    registration
+                    for registration in registrations
+                    if registration.registration_id not in processed_registration_ids
+                ]
+
+                if new_registrations:
+                    # Determine the number of rows that are currently used in the master
+                    # list Google Sheets.  This number doesn't necessarily correspond to
+                    # the number of registrations as a registration may contain several
+                    # children.
+                    row_count = get_sheet_used_row_count(
+                        spreadsheets_resource,
+                        output_google_spreadsheet_id)
+
+                    for registration in new_registrations:
+                        process_registration(
+                            registration,
+                            smtp_connection_properties,
+                            email_template_path,
+                            'UPMD',
+                            'transport@upmd.fr',
+                            spreadsheets_resource,
+                            output_google_spreadsheet_id,
+                            f'A{row_count + 1}')
+
+                        row_count += len(registration.children)
+
+            if not does_loop:
+                break
+
+            logging.info("Breathing a little bit...")
+            time.sleep(DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION)
+
+        except KeyboardInterrupt:
+            logging.info('Stopping the script...')
 
 
 def send_registration_confirmation_email(
