@@ -1,5 +1,5 @@
 Pipfile.lock
 dist
-upmd_schoolbus_registration_aggregator.egg-info
+schoolbus_registration_aggregator.egg-info
 *.pickle
 *.json

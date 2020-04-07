@@ -26,7 +26,7 @@ import argparse
 import logging
 import sys
 
-from upmd.registration import aggregator
+from intek.registration import aggregator
 
 
 # Default format to use by the logger.
