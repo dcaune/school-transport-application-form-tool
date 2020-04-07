@@ -25,7 +25,7 @@ Le script en ligne de commande (CLI) `aggregate_bus_registration` permet d'aggr�
 
 ## Installation
 
-L'application **UPMD School Bus Registration Aggregator** est un script [Python(https://fr.wikipedia.org/wiki/Python_(langage))] de type [_interface en ligne de commande_](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande).
+L'application **UPMD School Bus Registration Aggregator** est un script [Python](https://fr.wikipedia.org/wiki/Python_(langage)) de type [_interface en ligne de commande_](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande).
 
 Cette application est [displonible en ligne](https://pypi.org/project/upmd-schoolbus-registration-aggregator/) comme [paquet](<https://fr.wikipedia.org/wiki/Paquet_(logiciel)>) dans le [dépôt](<https://fr.wikipedia.org/wiki/D%C3%A9p%C3%B4t_(informatique)>) tiers officiel [_Python Package Index_](https://pypi.org/) recensant tous les paquets Python [libres](https://fr.wikipedia.org/wiki/Logiciel_libre).
 
