@@ -31,8 +31,8 @@ import logging
 import pickle
 import os
 import re
-import sys
 import time
+import traceback
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -43,6 +43,7 @@ from majormode.perseus.model.locale import Locale
 from majormode.perseus.utils import email_util
 from majormode.perseus.utils import string_util
 import googleapiclient.discovery
+import googleapiclient.errors
 import langdetect
 import unidecode
 
@@ -56,7 +57,7 @@ DEFAULT_GOOGLE_OAUTH2_TOKEN_FILE_NAME = 'oauth2_token.pickle'
 DEFAULT_GOOGLE_CREDENTIALS_FILE_NAME = 'google_credentials.json'
 
 # Default time in seconds between two consecutive executions.
-DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION = 60
+DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION = 60 * 5
 
 # Default name of the file where the connection properties to the
 # Simple Mail Transfer Protocol (SMTP) is stored in.
@@ -1606,6 +1607,7 @@ def run(arguments):
         service = googleapiclient.discovery.build('sheets', 'v4', credentials=oauth2_token)
         spreadsheets_resource = service.spreadsheets()
 
+    # Execute the main loop of the
     while True:
         try:
             # Load the registrations from the CSV file, if specified.
@@ -1670,6 +1672,10 @@ def run(arguments):
                 break
 
             logging.info("Breathing a little bit...")
+            time.sleep(DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION)
+
+        except googleapiclient.errors.HttpError:
+            traceback.print_exc()
             time.sleep(DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION)
 
         except KeyboardInterrupt:
