@@ -1446,7 +1446,7 @@ def prettify_registration_id(id_):
     """
     segments = []
     while id_ > 0:
-        segments.append(str(id_ % 1000))
+        segments.append(str(id_ % 1000).zfill(3))
         id_ //= 1000
 
     return '-'.join(reversed(segments))
