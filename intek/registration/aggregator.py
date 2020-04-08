@@ -167,11 +167,10 @@ class Person:
         :return: The formatted first name of the person.
         """
         first_name_ = cls.normalize_name(first_name)
-        return first_name_ if locale == KOREAN_LOCALE \
-            else ' '.join([
-                component.lower().capitalize()
-                for component in first_name_.split()
-            ])
+        return ' '.join([
+            component.lower().capitalize()
+            for component in first_name_.split()
+        ])
 
     @staticmethod
     def format_fullname(last_name, first_name, locale):
@@ -217,8 +216,7 @@ class Person:
         :return: The formatted last name of the person.
         """
         last_name_ = cls.normalize_name(last_name)
-        return last_name_ if locale == KOREAN_LOCALE \
-            else last_name_.upper()
+        return last_name_.upper()
 
     @staticmethod
     def normalize_name(name):

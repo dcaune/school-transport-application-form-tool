@@ -32,7 +32,7 @@ __email__ = "daniel.caune@gmail.com"
 __license__ = "MIT"
 __maintainer__ = "Daniel CAUNE"
 __status__ = "Production"
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 
 # Base directory where this file is located.
@@ -66,7 +66,7 @@ setuptools.setup(
     license=__license__,
     long_description=read_file(os.path.join(BASE_DIR, 'README.md')),
     long_description_content_type='text/markdown',
-    name='schoolbus-registration-aggregator',
+    name='upmd-schoolbus-registration-aggregator',
     packages=setuptools.find_packages(),
     package_data={'intek.registration': ['templates/*.*']},
     platforms=['any'],
