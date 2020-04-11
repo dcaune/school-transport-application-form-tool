@@ -343,7 +343,7 @@ class Parent(Person):
             secondary parent.
 
             The primary parent is supposed to be the parent who entered the
-            information into the registration form. This parent is supposed to
+            information into the application form. This parent is supposed to
             have selected the online form that corresponds to his preferred
             language.
 
@@ -450,7 +450,7 @@ class Parent(Person):
 
 class Registration:
     """
-    The registration of a family to the school bus transportation service.
+    The application of a family to the school bus transportation service.
     """
     # Enumeration of the columns (fields) of the sheet containing the
     # registrations of families to the school bus transportation service.
@@ -550,7 +550,7 @@ class Registration:
         )
     ]
 
-    # Number of digits that composes a registration ID.
+    # Number of digits that composes a application ID.
     REGISTRATION_ID_DEFAULT_DIGIT_NUMBER = 9
 
     # Subscription fees of the family to register to the school bus
@@ -559,7 +559,7 @@ class Registration:
     #
     # @patch: The script detects whether a family agrees to become a member
     #     or not of the parents association by checking the payment amount
-    #     the family is willing to pay as proposed on the registration form.
+    #     the family is willing to pay as proposed on the application form.
     #     However because the form is localized in several languages (e.g.,
     #     French and English), the decimal separator for the subscription
     #     fees is different from the responses to a form from another.
@@ -570,8 +570,8 @@ class Registration:
         PAYMENT_AMOUNT_NON_UPMD.split(',')[0]: False
     }
 
-    # Cache of the registration IDs already generated.  This cache is used
-    # to detect possible duplicates, and to generate other registration IDs.
+    # Cache of the application IDs already generated.  This cache is used
+    # to detect possible duplicates, and to generate other application IDs.
     __registration_ids_cache = set()
 
     def __init__(
@@ -585,7 +585,7 @@ class Registration:
         Build a new object `Registration`.
 
         :param registration_time: Date and time when the family submitted its
-            registration form.
+            application form.
 
         :param children: A list of objects `Child` of the children registered
             to the school bus transportation service.
@@ -597,7 +597,7 @@ class Registration:
             become a member of the parents association.
 
         :param locale: An object `locale` corresponding to the language of the
-            registration form that the family has selected.
+            application form that the family has selected.
         """
         self.__registration_id = self.__generate_registration_id(parents)
         self.__registration_time = registration_time
@@ -612,16 +612,16 @@ class Registration:
             parents,
             digit_number=REGISTRATION_ID_DEFAULT_DIGIT_NUMBER):
         """
-        Return an identification for this registration.
+        Return an identification for this application.
 
 
         :param parents: A list of objects `Parent`.
 
-        :param digit_number: The number of digits to define the registration
+        :param digit_number: The number of digits to define the application
             ID.
 
 
-        :return: An integer corresponding to the registration ID.
+        :return: An integer corresponding to the application ID.
         """
         parent_email_addresses = ', '.join(sorted([parent.email_address for parent in parents]))
 
@@ -630,7 +630,7 @@ class Registration:
 
         # @todo: Check elsewhere
         # if registration_id in cls.__registration_ids_cache:
-        #     raise ValueError(f"the generated registration ID {registration_id} is already used ({parent_email_addresses})")
+        #     raise ValueError(f"the generated application ID {registration_id} is already used ({parent_email_addresses})")
 
         cls.__registration_ids_cache.add(registration_id)
 
@@ -685,7 +685,7 @@ class Registration:
             secondary parent.
 
             The primary parent is supposed to be the parent who entered the
-            information into the registration form. This parent is supposed to
+            information into the application form. This parent is supposed to
             have selected the online form that corresponds to his preferred
             language.
 
@@ -745,7 +745,7 @@ class Registration:
     @classmethod
     def from_row(cls, row, locale):
         """
-        Return the registration of a family who registered by entering
+        Return the application of a family who registered by entering
         information to an online form.
 
 
@@ -773,7 +773,7 @@ class Registration:
         if len(row) < len(cls.RegistrationFields):
             row.extend([''] * (len(cls.RegistrationFields) - len(row)))
 
-        # Parse the date and time when the family submitted the registration
+        # Parse the date and time when the family submitted the application
         # form.
         registration_time = datetime.datetime.strptime(
             row[cls.RegistrationFields.REGISTRATION_TIME.value - 1],
@@ -786,7 +786,7 @@ class Registration:
             if child is not None:
                 children.append(child)
 
-        # List the parent(s) who submitted the registration form.
+        # List the parent(s) who submitted the application form.
         parents = []
         for i, parent_fields in enumerate(cls.PARENTS_FIELDS):
             parent = cls.__parse_parent(row, parent_fields, locale, is_secondary_parent=i > 0)
@@ -836,7 +836,7 @@ def build_current_directory_path_name(file_name):
 
 def build_registration_confirmation_email_content(registration, locale, template_path):
     """
-    Build the localized content of a registration confirmation e-mail to
+    Build the localized content of a application confirmation e-mail to
     send to a family.
 
 
@@ -867,7 +867,7 @@ def build_registration_confirmation_email_content(registration, locale, template
 
 def build_registration_rows(registration):
     """
-    Build the rows of values of the registration of a family to the school
+    Build the rows of values of the application of a family to the school
     bus transportation service.
 
     There are as many rows as the number of children registered to the
@@ -875,8 +875,8 @@ def build_registration_rows(registration):
     the family, and some other information that is not duplicated over the
     other rows:
 
-    - identification of the registration;
-    - date and time when the family submitted its registration;
+    - identification of the application;
+    - date and time when the family submitted its application;
     - information about the primary parent;
     - information about a possible secondary parent;
     - a flag that indicates whether the family is willing to become or not
@@ -886,7 +886,7 @@ def build_registration_rows(registration):
     :param registration: An object `Registration`.
 
 
-    :return: A list of registration's rows to be inserted in the master
+    :return: A list of application's rows to be inserted in the master
         list.
     """
     rows = []
@@ -1097,17 +1097,17 @@ def flatten_list(l):
 def get_registration_confirmation_email_attachment_file_path_name(locale, template_path):
     """
     Return the absolute path and name of the file to attach to the
-    registration confirmation e-mail to be sent to the parent(s) of a
+    application confirmation e-mail to be sent to the parent(s) of a
     family.
 
 
     :param locale: An object `Locale` that references that language of the
-        file to attache to the registration confirmation e-mail template.
+        file to attache to the application confirmation e-mail template.
         If no file corresponds to the specified locale, the functions
         returns the file corresponding to the English language.
 
     :param template_path: The absolute path of the folder where the
-        localized files to attached to a registration confirmation e-mail
+        localized files to attached to a application confirmation e-mail
         are stored in.
 
 
@@ -1213,7 +1213,7 @@ def get_registration_confirmation_email_template(locale, template_path):
     """
     Return a localized e-mail template.
 
-    This template corresponds to registration confirmation e-mail that is
+    This template corresponds to application confirmation e-mail that is
     sent to the parent(s) of the family.
 
 
@@ -1319,7 +1319,7 @@ def insert_registration_to_master_list(
         spreadsheet_id,
         sheet_range):
     """
-    Insert the information of a registration to the school bus
+    Insert the information of a application to the school bus
     transportation service to the master list.
 
 
@@ -1333,7 +1333,7 @@ def insert_registration_to_master_list(
         to the school bus transportation service.
 
     :param sheet_range: Range (a row) in the master list sheet where to
-        start inserting the information of this registration.
+        start inserting the information of this application.
 
 
     :raise ValueError: If the Google Sheets document contains more than
@@ -1363,7 +1363,7 @@ def load_registrations_from_csv_file(csv_file_path_name, locale):
     :param csv_file_path_name: Absolute path and name of the CSV file.
 
     :param locale: An object `Locale` corresponding to the language of the
-        online form from which the registration information have been
+        online form from which the application information have been
         exported to the CSV file.
 
 
@@ -1384,7 +1384,7 @@ def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, 
 
 
     :param spreadsheet_id: Identification of the Google Sheets document that
-        contains the sheet where the responses to the localized registration
+        contains the sheet where the responses to the localized application
         forms have been stored in.
 
     :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
@@ -1401,7 +1401,7 @@ def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, 
     """
     # Retrieve the names of all the sheets contained in the specified Google
     # Sheets document. These sheets MUST have been named after a locale that
-    # references the language in which the related registration form was
+    # references the language in which the related application form was
     # written in.
     sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
 
@@ -1433,13 +1433,13 @@ def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, 
 
 def prettify_registration_id(id_):
     """
-    Convert a registration ID to human-readable string.
+    Convert a application ID to human-readable string.
 
 
-    :param id_: Identification of a registration.
+    :param id_: Identification of a application.
 
 
-    :return: A string version of the registration ID decomposed in groups
+    :return: A string version of the application ID decomposed in groups
         of 3 digits separated with a dash character.
     """
     segments = []
@@ -1460,7 +1460,7 @@ def process_registration(
         spreadsheet_id,
         sheet_range):
     """
-    Process a new registration.
+    Process a new application.
 
 
     :param registration: An object `Registration`.
@@ -1482,7 +1482,7 @@ def process_registration(
     :param spreadsheet_id: Identification of a Google Sheet document.
 
     :param sheet_range: Range (a row) in the master list sheet where to
-        start inserting the information of this registration.
+        start inserting the information of this application.
     """
     send_registration_confirmation_email(registration, smtp_connection_properties, template_path, author_name, author_email_address)
     insert_registration_to_master_list(registration, spreadsheets_resource, spreadsheet_id, sheet_range)
@@ -1586,7 +1586,7 @@ def run(arguments):
     does_loop = arguments.loop and input_google_spreadsheet_id
 
     # Get the identification of the Google Sheets where the script stores
-    # the information from all the registration forms submitted by the
+    # the information from all the application forms submitted by the
     # families.  If the user doesn't specify an identification, the script
     # will print this information to the standard output.
     output_google_spreadsheet_id = arguments.output_google_spreadsheet_id
@@ -1647,7 +1647,7 @@ def run(arguments):
                 if new_registrations:
                     # Determine the number of rows that are currently used in the master
                     # list Google Sheets.  This number doesn't necessarily correspond to
-                    # the number of registrations as a registration may contain several
+                    # the number of registrations as a application may contain several
                     # children.
                     row_count = get_sheet_used_row_count(
                         spreadsheets_resource,
@@ -1688,7 +1688,7 @@ def send_registration_confirmation_email(
         author_email_address):
     """
     Send a confirmation e-mail to the parents of a family who submitted a
-    registration to the school bus transportation service.
+    application to the school bus transportation service.
 
     The function optimizes the number of e-mail to be sent to the parents,
     by grouping parents by their preferred languages.  If two parents (or

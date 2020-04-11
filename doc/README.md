@@ -1,4 +1,21 @@
-# UPMD School Bus Registration Aggregator
+# School Transport Application Form Integration
+
+**School Transport Application Form Integration** est un outil permettant de gérer les inscriptions de famille au transport scolaire d'une école.
+
+
+ 
+ 
+ 
+ récupérer les données des formulaires multilingues (Google Forms) d'inscriptions au transport scolaire d'une école et de les regrouper dans un seul tableau (Google Sheets).
+
+
+
+
+
+
+
+ script [Python](https://fr.wikipedia.org/wiki/Python_(langage)) de type [_interface en ligne de commande_](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande).
+
 
 L'[Union des Parents d'Élèves](https://www.upmd.fr) du [Lycée Français International Marguerite Duras](http://lfiduras.com) met en place un formulaire en ligne permettant aux parents d'enregistrer leur(s) enfant(s) au transport scolaire.
 

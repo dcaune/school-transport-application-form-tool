@@ -26,13 +26,13 @@ import setuptools
 
 
 __author__ = "Daniel CAUNE"
-__copyright__ = "Copyright (C) 2019, Intek Institute"
+__copyright__ = "Copyright (C) 2020, Intek Institute"
 __credits__ = ["Daniel CAUNE"]
 __email__ = "daniel.caune@gmail.com"
 __license__ = "MIT"
 __maintainer__ = "Daniel CAUNE"
 __status__ = "Production"
-__version__ = '1.1.3'
+__version__ = '1.2.1'
 
 
 # Base directory where this file is located.
@@ -61,22 +61,22 @@ setuptools.setup(
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries',
     ],
-    description='School Bus Registration Aggregator',
+    description='School Transport Application Form Tool',
     install_requires=get_requirements(),
     license=__license__,
     long_description=read_file(os.path.join(BASE_DIR, 'README.md')),
     long_description_content_type='text/markdown',
-    name='upmd-schoolbus-registration-aggregator',
+    name='school-transport-application-form-tool',
     packages=setuptools.find_packages(),
-    package_data={'intek.registration': ['templates/*.*']},
+    package_data={'intek.application': ['templates/*.*']},
     platforms=['any'],
     project_urls={
-        'Bug Tracker': 'https://github.com/dcaune/school-bus-registration-aggregator/issues',
-        'Documentation': 'https://github.com/dcaune/school-bus-registration-aggregator',
-        'Source Code': 'https://github.com/dcaune/school-bus-registration-aggregator',
+        'Bug Tracker': 'https://github.com/dcaune/school-transport-application-form-tool/issues',
+        'Documentation': 'https://github.com/dcaune/school-transport-application-form-tool',
+        'Source Code': 'https://github.com/dcaune/school-transport-application-form-tool',
     },
     python_requires='>=3.6',
-    scripts=['bin/aggregate_bus_registration'],
+    scripts=['bin/process_applications'],
     version=__version__,
-    url='https://github.com/dcaune/school-bus-registration-aggregator',
+    url='https://github.com/dcaune/school-transport-application-form-tool',
 )

@@ -26,7 +26,7 @@ import argparse
 import logging
 import sys
 
-from intek.registration import aggregator
+from intek.application import etl
 
 
 # Default format to use by the logger.
@@ -57,7 +57,7 @@ def get_console_handler(logging_formatter=DEFAULT_LOGGING_FORMATTER):
 def main():
     arguments = parse_arguments()
     setup_logger()
-    aggregator.run(arguments)
+    etl.run(arguments)
 
 
 def parse_arguments():
@@ -87,7 +87,7 @@ def parse_arguments():
         metavar='LOCALE',
         required=False,
         help="specify the locale (ISO 639-3 code) corresponding to the language of "
-             "the registration form")
+             "the application form")
 
     parser.add_argument(
         '-c',
@@ -105,7 +105,7 @@ def parse_arguments():
         metavar='ID',
         required=False,
         help="specify the identification of the Google spreadsheet containing the "
-             "responses to the registration forms"
+             "responses to the application forms"
     )
 
     parser.add_argument(
@@ -115,7 +115,7 @@ def parse_arguments():
         metavar='ID',
         required=False,
         help="specify the identification of the Google spreadsheet to populate "
-             "children and parents from the registration forms"
+             "children and parents from the application forms"
     )
 
     # Parse the properties to connect to the Simple Mail Transfer Protocol
