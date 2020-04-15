@@ -1,6 +1,6 @@
-# School Transport Application Form Integration
+# School Transport Application Form Tool
 
-**School Transport Application Form Integration** est un outil permettant de gérer les inscriptions de famille au transport scolaire d'une école.
+**School Transport Application Form Tool** est un outil permettant de gérer les inscriptions de famille au transport scolaire d'une école.
 
 
  
