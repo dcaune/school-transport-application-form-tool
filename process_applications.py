@@ -71,6 +71,9 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description="School Transport Application Form Tool")
 
+    # Path and name of the Comma-Separated Values (CSV) file that contains
+    # the responses to a Google Forms registration document, and the
+    # locale which the text of this form is written in.
     parser.add_argument(
         '-f',
         '--file',
@@ -83,12 +86,13 @@ def parse_arguments():
     parser.add_argument(
         '-l',
         '--locale',
-        dest='locale',
         metavar='LOCALE',
         required=False,
         help="specify the locale (ISO 639-3 code) corresponding to the language of "
              "the application form")
 
+    # Path and name of the file that contains the Google service account
+    # key.
     parser.add_argument(
         '-c',
         '--google-credentials',
@@ -98,38 +102,55 @@ def parse_arguments():
         default='credentials.json',
         help="absolute path and name of the Google credentials file")
 
+    # Identification of the Google Sheets document where the responses to
+    # the Google Forms are stored in.
     parser.add_argument(
         '-i',
         '--input-google-spreadsheet-id',
-        dest='input_google_spreadsheet_id',
         metavar='ID',
         required=False,
         help="specify the identification of the Google spreadsheet containing the "
              "responses to the application forms"
     )
 
+    # Identification of the Google Sheets document where the responses to
+    # the Google Forms needs to be aggregated in.
     parser.add_argument(
         '-o',
         '--output-google-spreadsheet-id',
-        dest='output_google_spreadsheet_id',
         metavar='ID',
         required=False,
         help="specify the identification of the Google spreadsheet to populate "
-             "children and parents from the application forms"
-    )
+             "children and parents from the application forms")
 
-    # Parse the properties to connect to the Simple Mail Transfer Protocol
-    # (SMTP) server.
+    # Settings to geocode the home addresses of parents.
+    parser.add_argument(
+        'k',
+        '--google-api-key',
+        metavar='KEY',
+        required=False,
+        help="specify the key to use Google Geocoding API")
+
+    parser.add_argument(
+        '--no-geocoding',
+        action='store_true',
+        required=False,
+        help="request the script no to geocode parents' home address(es)")
+
+    # Properties to connect to the Simple Mail Transfer Protocol (SMTP)
+    # server.
     parser.add_argument(
         '--smtp-hostname',
         required=False,
         help="specify the host name of the machine on which the SMTP server is "
-             "running")
+             "running"
+    )
 
     parser.add_argument(
         '--smtp-username',
         required=False,
-        help="specify the username/email address to connect to the SMPT server")
+        help="specify the username/email address to connect to the SMPT server"
+    )
 
     parser.add_argument(
         '--smtp-port',
@@ -139,11 +160,22 @@ def parse_arguments():
         help="specify the TCP port or the local Unix-domain socket file extension on "
              "which the SMTP server is listening for connections")
 
+    # Path of the folder where the localized HTML e-mail templates are
+    # saved in.  These templates are used to generate and send e-mail to
+    # the parents depending on their preferred language.
     parser.add_argument(
         '--email-template-path',
         required=False,
         help='specify the absolute path name of the localized HTML e-mail templates')
 
+    # Settings to request the script not to send e-mail to parents.
+    parser.add_argument(
+        '--no-email',
+        action='store_true',
+        required=False,
+        help='require the script not to send e-mails to the parents who registered')
+
+    # Settings to request the script to keep running for ever.
     parser.add_argument(
         '--loop',
         action='store_true',
@@ -184,8 +216,6 @@ def setup_logger(
     logger.propagate = False
     return logger
 
-
-from intek.application.geocoding import GoogleGeocoder
 
 if __name__ == "__main__":
     main()
