@@ -125,7 +125,7 @@ def parse_arguments():
 
     # Settings to geocode the home addresses of parents.
     parser.add_argument(
-        'k',
+        '-k',
         '--google-api-key',
         metavar='KEY',
         required=False,
