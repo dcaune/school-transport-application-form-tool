@@ -938,7 +938,7 @@ def run(arguments):
                             smtp_connection_properties,
                             email_template_path,
                             'UPMD',
-                            'transport@intek.fr',
+                            'transport@upmd.fr',
                             spreadsheets_resource,
                             output_google_spreadsheet_id,
                             f'A{row_count + 1}')
