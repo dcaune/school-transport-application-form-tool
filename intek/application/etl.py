@@ -40,6 +40,7 @@ from majormode.perseus.utils import email_util
 import googleapiclient.discovery
 import googleapiclient.errors
 
+from .geocoding import GoogleGeocoder
 from .model import PAYMENT_AMOUNT_NON_UPMD
 from .model import PAYMENT_AMOUNT_UPMD
 from .model import Registration
@@ -732,12 +733,13 @@ def prettify_registration_id(id_):
 def process_registration(
         registration,
         smtp_connection_properties,
-        template_path,
-        author_name,
-        author_email_address,
         spreadsheets_resource,
         spreadsheet_id,
-        sheet_range):
+        sheet_range,
+        author_email_address=None,
+        author_name=None,
+        no_email=False,
+        template_path=None):
     """
     Process a new application.
 
@@ -747,14 +749,6 @@ def process_registration(
     :param smtp_connection_properties: Properties to connect to the Simple
         Mail Transfer Protocol (SMTP) server.
 
-    :param template_path: The absolute path of the folder where localized
-        e-mail templates and files to attach are stored in.
-
-    :param author_name: Complete name of the originator of the message.
-
-    :param author_email_address: Address of the mailbox to which the author
-        of the message suggests that replies be sent.
-
     :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
         returned by the Google API client library.
 
@@ -762,9 +756,31 @@ def process_registration(
 
     :param sheet_range: Range (a row) in the master list sheet where to
         start inserting the information of this application.
+
+    :param author_email_address: Address of the mailbox to which the author
+        of the message suggests that replies be sent.
+
+    :param author_name: Complete name of the originator of the message.
+
+    :param no_email: Indicate whether to send or not an e-mail to the
+        parents to confirm they have been registered.
+
+    :param template_path: The absolute path of the folder where localized
+        e-mail templates and files to attach are stored in.
     """
-    send_registration_confirmation_email(registration, smtp_connection_properties, template_path, author_name, author_email_address)
-    insert_registration_to_master_list(registration, spreadsheets_resource, spreadsheet_id, sheet_range)
+    if not no_email:
+        send_registration_confirmation_email(
+            registration,
+            smtp_connection_properties,
+            template_path,
+            author_name,
+            author_email_address)
+
+    insert_registration_to_master_list(
+        registration,
+        spreadsheets_resource,
+        spreadsheet_id,
+        sheet_range)
 
 
 def read_csv_file_values(csv_file_path_name, has_header=True):
@@ -860,6 +876,14 @@ def run(arguments):
     if not csv_file_path_name and not input_google_spreadsheet_id:
         raise ValueError("a CSV file or a Google spreadsheet ID must be passed")
 
+    # Checks that the personal name and the e-mail address of the author
+    # on behalf of whom the e-mails to be sent to the parents have been
+    # passed to the command line.
+    if not arguments.no_email \
+            and (not arguments.author_name or not arguments.author_email_address):
+        raise ValueError("the name and the e-mail of the author of the e-mails to be sent to "
+                         "the parents must be passed")
+
     # Check whether the script needs to loop for even until the user
     # decides to stop it
     does_loop = arguments.loop and input_google_spreadsheet_id
@@ -936,12 +960,13 @@ def run(arguments):
                         process_registration(
                             registration,
                             smtp_connection_properties,
-                            email_template_path,
-                            'UPMD',
-                            'transport@upmd.fr',
                             spreadsheets_resource,
                             output_google_spreadsheet_id,
-                            f'A{row_count + 1}')
+                            f'A{row_count + 1}',
+                            author_email_address=arguments.author_email_address,
+                            author_name=arguments.author_name,
+                            no_email=arguments.no_email,
+                            template_path=email_template_path)
 
                         row_count += len(registration.children)
 
@@ -962,7 +987,7 @@ def run(arguments):
 def send_registration_confirmation_email(
         registration,
         smtp_connection_properties,
-        template_path,
+        email_template_path,
         author_name,
         author_email_address):
     """
@@ -981,8 +1006,8 @@ def send_registration_confirmation_email(
     :param smtp_connection_properties: Properties to connect to the Simple
         Mail Transfer Protocol (SMTP) server.
 
-    :param template_path: The absolute path of the folder where localized
-        e-mail templates and files to attach are stored in.
+    :param email_template_path: The absolute path of the folder where
+        localized e-mail templates and files to attach are stored in.
 
     :param author_name: Complete name of the originator of the message.
 
@@ -997,7 +1022,7 @@ def send_registration_confirmation_email(
 
     for locale, parents in parents_locale_mapping.items():
         email_subject, email_content = \
-            build_registration_confirmation_email_content(registration, locale, template_path)
+            build_registration_confirmation_email_content(registration, locale, email_template_path)
 
         parent_email_addresses = [parent.email_address for parent in parents]
 
@@ -1013,5 +1038,5 @@ def send_registration_confirmation_email(
             email_content,
             file_path_names=get_registration_confirmation_email_attachment_file_path_name(
                 registration.locale,
-                template_path),
+                email_template_path),
             port_number=smtp_connection_properties.port_number)
