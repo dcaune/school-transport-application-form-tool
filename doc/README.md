@@ -210,3 +210,12 @@ Vous pouvez exécuter l'application **UPMD School Bus Registration Aggregator** 
 2020-04-06 15:49:10,082 [INFO] URL being requested: PUT https://sheets.googleapis.com/v4/spreadsheets/1bXoZDpq8g9D0lewfn8MRxIOR0-IWsJ9gUbG1vL1JZXU/values/Children%20%26%20Parents%21A10?valueInputOption=RAW&alt=json
 2020-04-06 15:49:10,491 [INFO] Breathing a little bit...
 ```
+
+
+
+
+
+
+## Géocodage des Adresses
+
+https://console.developers.google.com/google/maps-apis/new

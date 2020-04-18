@@ -69,7 +69,7 @@ def parse_arguments():
     @return: an instance `argparse.Namespace` corresponding to the
         populated namespace.
     """
-    parser = argparse.ArgumentParser(description="School Bus Registration Aggregator")
+    parser = argparse.ArgumentParser(description="School Transport Application Form Tool")
 
     parser.add_argument(
         '-f',
@@ -184,6 +184,8 @@ def setup_logger(
     logger.propagate = False
     return logger
 
+
+from intek.application.geocoding import GoogleGeocoder
 
 if __name__ == "__main__":
     main()
