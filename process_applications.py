@@ -164,6 +164,21 @@ def parse_arguments():
     # saved in.  These templates are used to generate and send e-mail to
     # the parents depending on their preferred language.
     parser.add_argument(
+        '--email-author-name',
+        dest='author_name',
+        metavar='NAME',
+        required=False,
+        help='specify the name of the author of the e-mail to send to the parents')
+
+    parser.add_argument(
+        '--email-author-address',
+        dest='author_email_address',
+        metavar='EMAIL',
+        required=False,
+        help='specify the mailbox to which the author of the e-mail suggests that '
+             'replies be sent.')
+
+    parser.add_argument(
         '--email-template-path',
         required=False,
         help='specify the absolute path name of the localized HTML e-mail templates')
