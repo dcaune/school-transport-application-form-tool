@@ -32,7 +32,7 @@ __email__ = "daniel.caune@gmail.com"
 __license__ = "MIT"
 __maintainer__ = "Daniel CAUNE"
 __status__ = "Production"
-__version__ = '1.2.6'
+__version__ = '2.0.0'
 
 
 # Base directory where this file is located.
