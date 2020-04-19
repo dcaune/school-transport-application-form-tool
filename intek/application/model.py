@@ -253,9 +253,10 @@ class Parent(Person):
             first_name,
             email_address,
             phone_number,
-            home_address,
+            formatted_address,
             locale,
-            is_secondary_parent):
+            is_secondary_parent,
+            geocoded_address=None):
         """
         Build a new object `Parent`.
 
@@ -271,7 +272,7 @@ class Parent(Person):
         :param phone_number: Mobile phone number of the parent.  This number
             MUST be composed of 10 digits.
 
-        :param home_address: Postal address of the parent's residence.  The
+        :param formatted_address: Postal address of the parent's residence.  The
             home address of the secondary parent is optional, supposedly the
             same than the primary parent's home address.
 
@@ -292,6 +293,10 @@ class Parent(Person):
             the language of the secondary parent may differ from the language
             of the primary parent. Therefore, the function tries to detect the
             language of this secondary parent.
+
+        :param geocoded_address: Human-readable address as determined by a
+            geocoder from the initial formatted address. The latter address may
+            have been given with missing components (e.g., ward, district, city).
         """
         if is_secondary_parent:
             # @patch: Secondary parent of a mixed family is often a Vietnamese
@@ -306,11 +311,12 @@ class Parent(Person):
         self.__email_address = self.__format_email_address(email_address)
         self.__phone_number = self.__format_phone_number(phone_number)
 
-        if not home_address:
+        if not formatted_address:
             if not is_secondary_parent:
                 ValueError('the home address of the primary parent must be passed')
 
-        self.__home_address = home_address and self.__cleanse_postal_address(home_address)
+        self.__formatted_address = formatted_address and self.__cleanse_postal_address(formatted_address)
+        self.__geocoded_address = geocoded_address
 
     @staticmethod
     def __cleanse_postal_address(home_address):
@@ -380,8 +386,12 @@ class Parent(Person):
         return self.__email_address
 
     @property
-    def home_address(self):
-        return self.__home_address
+    def formatted_address(self):
+        return self.__formatted_address
+
+    @property
+    def geocoded_address(self):
+        return self.__geocoded_address
 
     @property
     def phone_number(self):
@@ -512,7 +522,9 @@ class Registration:
 
     # Cache of the application IDs already generated.  This cache is used
     # to detect possible duplicates, and to generate other application IDs.
-    __registration_ids_cache = set()
+    # The key corresponds to the registration ID and the value corresponds
+    # to the primary parent's email address.
+    __registration_ids_cache = dict()
 
     def __init__(
             self,
@@ -520,9 +532,11 @@ class Registration:
             children,
             parents,
             is_ape_member,
-            locale):
+            locale,
+            geocoder=None):
         """
         Build a new object `Registration`.
+
 
         :param registration_time: Date and time when the family submitted its
             application form.
@@ -538,6 +552,9 @@ class Registration:
 
         :param locale: An object `locale` corresponding to the language of the
             application form that the family has selected.
+
+        :param geocoder: An object `Geocoder` to convert the home address(es)
+            of the parent(s) into geographical coordinates.
         """
         self.__registration_id = self.__generate_registration_id(parents)
         self.__registration_time = registration_time
@@ -545,6 +562,7 @@ class Registration:
         self.__parents = parents
         self.__is_ape_member = is_ape_member
         self.__locale = locale or ENGLISH_LOCALE
+        self.__geocoder = geocoder
 
     @classmethod
     def __generate_registration_id(
@@ -568,11 +586,11 @@ class Registration:
         checksum = hashlib.md5(parent_email_addresses.encode()).hexdigest()
         registration_id = int(checksum, 16) % (10 ** digit_number)
 
-        # @todo: Check elsewhere
-        # if registration_id in cls.__registration_ids_cache:
-        #     raise ValueError(f"the generated application ID {registration_id} is already used ({parent_email_addresses})")
+        if registration_id in cls.__registration_ids_cache \
+           and cls.__registration_ids_cache.get(registration_id) != parent_email_addresses:
+            raise ValueError(f"the generated application ID {registration_id} is already used ({parent_email_addresses})")
 
-        cls.__registration_ids_cache.add(registration_id)
+        cls.__registration_ids_cache[registration_id] = parent_email_addresses
 
         return registration_id
 
