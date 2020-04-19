@@ -18,6 +18,7 @@ google-auth-oauthlib = "*"
 langdetect = "*"
 requests = "*"
 perseus-place-core-library = "*"
+simplekml = "*"
 
 [requires]
 python_version = "3.7"
