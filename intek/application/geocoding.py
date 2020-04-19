@@ -26,7 +26,7 @@ from majormode.perseus.model.geolocation import GeoPoint
 from majormode.perseus.model.place import Place
 
 
-GOOGLE_GEOCODING_API_URL = 'https://maps.googleapis.com/maps/api/geocode/json?address={}&key={}'
+GOOGLE_GEOCODING_API_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
 
 GOOGLE_PERSEUS_ADDRESS_COMPONENTS_MAPPING = {
     'street_number': AddressComponentType.house_number,
@@ -39,10 +39,28 @@ GOOGLE_PERSEUS_ADDRESS_COMPONENTS_MAPPING = {
 
 
 class GoogleGeocoder:
+    __places_cache = dict()
+
+    @staticmethod
+    def __cleanse_place_address(address):
+        """
+        Cleanse a place's address.
+
+
+        :param address: A string representing the address of a person or
+            business.
+
+
+        :return: A string which the leading, trailing, and duplicated space
+            characters were removed, and all the words lower-cased.
+        """
+        return ' '.join([w.lower() for w in address.split()])
+
     def __init__(self, api_key):
         self.__api_key = api_key
 
-    def __parse_geometry(self, data):
+    @staticmethod
+    def __parse_geometry(data):
         if data:
             location_data = data.get('location')
             location = GeoPoint(location_data.get('lat'), location_data.get('lng'))
@@ -60,7 +78,8 @@ class GoogleGeocoder:
 
         return place
 
-    def __parse_address_components(self, data):
+    @staticmethod
+    def __parse_address_components(data):
         address_components = {}
 
         if data:
@@ -76,18 +95,34 @@ class GoogleGeocoder:
 
         return address_components
 
-    def geocode_address(self, formatted_address):
-        response = requests.get(GOOGLE_GEOCODING_API_URL.format(
-            formatted_address,
-            self.__api_key))
+    def __convert_address_to_place(self, formatted_address):
+        response = requests.get(
+            GOOGLE_GEOCODING_API_URL,
+            params={
+                'address': formatted_address,
+                'key': self.__api_key
+            })
 
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
 
         data = response.json()
-        if data['status'] != 'OK':
+        status = data['status']
+
+        if status not in ('OK', 'ZERO_RESULTS'):
             raise Exception(data['error_message'])
 
         results = data['results']
+        return None if len(results) == 0 \
+            else self.__parse_place(results[0])
 
-        return None if len(results) == 0 else self.__parse_place(results[0])
+    def geocode(self, formatted_address):
+        cleansed_address = self.__cleanse_place_address(formatted_address)
+
+        if cleansed_address in self.__places_cache:
+            return self.__places_cache.get(cleansed_address)
+
+        place = self.__convert_address_to_place(cleansed_address)
+        self.__places_cache[cleansed_address] = place
+
+        return place

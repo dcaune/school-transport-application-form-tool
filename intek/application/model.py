@@ -25,6 +25,7 @@ import hashlib
 import re
 
 from langdetect.lang_detect_exception import LangDetectException
+from majormode.perseus.constant.place import AddressComponentType
 from majormode.perseus.model.locale import DEFAULT_LOCALE
 from majormode.perseus.model.locale import Locale
 from majormode.perseus.utils import string_util
@@ -247,77 +248,6 @@ class Child(Person):
 
 
 class Parent(Person):
-    def __init__(
-            self,
-            last_name,
-            first_name,
-            email_address,
-            phone_number,
-            formatted_address,
-            locale,
-            is_secondary_parent,
-            geocoded_address=None):
-        """
-        Build a new object `Parent`.
-
-
-        :param last_name: Surname (also known as *family name*) of the parent.
-            The last name can be used to alphabetically sort a list of users.
-
-        :param first_name: Forename (also known as *given name*) of the parent.
-            The first name can be used to alphabetically sort a list of users.
-
-        :param email_address: E-mail address of the user.
-
-        :param phone_number: Mobile phone number of the parent.  This number
-            MUST be composed of 10 digits.
-
-        :param formatted_address: Postal address of the parent's residence.  The
-            home address of the secondary parent is optional, supposedly the
-            same than the primary parent's home address.
-
-        :param locale: The locale of the online form that the family used to
-            register to the school bus transportation service.  By default,
-            this locale is supposed to be the preferred language of the parent.
-
-        :param is_secondary_parent: Indicate whether this parent is the
-            secondary parent.
-
-            The primary parent is supposed to be the parent who entered the
-            information into the application form. This parent is supposed to
-            have selected the online form that corresponds to his preferred
-            language.
-
-            On another hand, the secondary parent is supposed to have been
-            referred by the primary parent, and because their are mixed family,
-            the language of the secondary parent may differ from the language
-            of the primary parent. Therefore, the function tries to detect the
-            language of this secondary parent.
-
-        :param geocoded_address: Human-readable address as determined by a
-            geocoder from the initial formatted address. The latter address may
-            have been given with missing components (e.g., ward, district, city).
-        """
-        if is_secondary_parent:
-            # @patch: Secondary parent of a mixed family is often a Vietnamese
-            #    person in Vietnam. Also the detection result for Vietnamese
-            #    personal names is highly trustable, while the result for other
-            #    name in the world is quite hazardous.  Therefore, we handle
-            #    Vietnamese personal names only.
-            if detect_locale(f'{last_name} {first_name}') == VIETNAMESE_LOCALE:
-                locale = VIETNAMESE_LOCALE
-
-        super().__init__(last_name, first_name, locale)
-        self.__email_address = self.__format_email_address(email_address)
-        self.__phone_number = self.__format_phone_number(phone_number)
-
-        if not formatted_address:
-            if not is_secondary_parent:
-                ValueError('the home address of the primary parent must be passed')
-
-        self.__formatted_address = formatted_address and self.__cleanse_postal_address(formatted_address)
-        self.__geocoded_address = geocoded_address
-
     @staticmethod
     def __cleanse_postal_address(home_address):
         """
@@ -381,21 +311,128 @@ class Parent(Person):
 
         return f'+84.{phone_number.zfill(10)}'
 
+    def __init__(
+            self,
+            last_name,
+            first_name,
+            email_address,
+            phone_number,
+            formatted_address,
+            locale,
+            is_secondary_parent,
+            geocoder=None):
+        """
+        Build a new object `Parent`.
+
+
+        :param last_name: Surname (also known as *family name*) of the parent.
+            The last name can be used to alphabetically sort a list of users.
+
+        :param first_name: Forename (also known as *given name*) of the parent.
+            The first name can be used to alphabetically sort a list of users.
+
+        :param email_address: E-mail address of the user.
+
+        :param phone_number: Mobile phone number of the parent.  This number
+            MUST be composed of 10 digits.
+
+        :param formatted_address: Postal address of the parent's residence.  The
+            home address of the secondary parent is optional, supposedly the
+            same than the primary parent's home address.
+
+        :param locale: The locale of the online form that the family used to
+            register to the school bus transportation service.  By default,
+            this locale is supposed to be the preferred language of the parent.
+
+        :param is_secondary_parent: Indicate whether this parent is the
+            secondary parent.
+
+            The primary parent is supposed to be the parent who entered the
+            information into the application form. This parent is supposed to
+            have selected the online form that corresponds to his preferred
+            language.
+
+            On another hand, the secondary parent is supposed to have been
+            referred by the primary parent, and because their are mixed family,
+            the language of the secondary parent may differ from the language
+            of the primary parent. Therefore, the function tries to detect the
+            language of this secondary parent.
+
+        :param geocoder: An object `GoogleGeocoder` to convert the parent's
+            address into geographical coordinates.
+        """
+        if is_secondary_parent:
+            # @patch: Secondary parent of a mixed family is often a Vietnamese
+            #    person in Vietnam. Also the detection result for Vietnamese
+            #    personal names is highly trustable, while the result for other
+            #    name in the world is quite hazardous.  Therefore, we handle
+            #    Vietnamese personal names only.
+            if detect_locale(f'{last_name} {first_name}') == VIETNAMESE_LOCALE:
+                locale = VIETNAMESE_LOCALE
+
+        super().__init__(last_name, first_name, locale)
+        self.__email_address = self.__format_email_address(email_address)
+        self.__phone_number = self.__format_phone_number(phone_number)
+
+        if not formatted_address:
+            if not is_secondary_parent:
+                ValueError('the home address of the primary parent must be passed')
+
+        self.__is_primary_parent = not is_secondary_parent
+        self.__formatted_address = formatted_address and self.__cleanse_postal_address(formatted_address)
+        self.__geocoder = geocoder
+        self.__place = None  # Evaluated with lazy loading technique (cf. property `place`)
+
     @property
     def email_address(self):
         return self.__email_address
 
     @property
     def formatted_address(self):
+        """
+        Human-readable address of the parent's home as entered by the parent
+        himself.
+
+
+        :return: A human-readable address of the parent's home.
+        """
         return self.__formatted_address
 
     @property
     def geocoded_address(self):
-        return self.__geocoded_address
+        place = self.place  # Lazy load the geocoded data.
+        return place and place.address.get(AddressComponentType.geocoded_address)
+
+    @property
+    def is_primary_parent(self):
+        return self.__is_primary_parent
+
+    @property
+    def location(self):
+        place = self.place  # Lazy load the geocoded data.
+        return place and place.location
 
     @property
     def phone_number(self):
         return self.__phone_number
+
+    @property
+    def place(self):
+        """
+        Information about the parent's home determined from the geocoding of
+        this home address.
+
+        The property uses a lazy loading technique to avoid calling the
+        geocoder (which consumes time and credits) until the information is
+        really needed.
+
+
+        :return: An object `Place`.
+        """
+        if self.__place is None and self.__geocoder and self.__formatted_address:
+            self.__place = self.__geocoder.geocode(self.__formatted_address)
+
+        return self.__place
 
 
 class Registration:
@@ -622,7 +659,13 @@ class Registration:
         return Child(*[row[field.value - 1] for field in fields], locale)
 
     @classmethod
-    def __parse_parent(cls, row, fields, locale, is_secondary_parent=True):
+    def __parse_parent(
+            cls,
+            row,
+            fields,
+            locale,
+            geocoder=None,
+            is_secondary_parent=True):
         """
         Return the information of a parent who registered one or more children
         to the school bus transportation service.
@@ -638,6 +681,9 @@ class Registration:
 
         :param locale: The locale of the online form that the family used to
             register to the school bus transportation service.
+
+        :param geocoder: An object `GoogleGeocoder` to convert the parent's
+            address to geographical coordinates.
 
         :param is_secondary_parent: Indicate whether this parent is the
             secondary parent.
@@ -663,7 +709,11 @@ class Registration:
 
             raise ValueError('The primary parent has not been defined')
 
-        return Parent(*[row[field.value - 1] for field in fields], locale, is_secondary_parent)
+        return Parent(
+            *[row[field.value - 1] for field in fields],
+            locale,
+            is_secondary_parent,
+            geocoder=geocoder)
 
     @classmethod
     def __parse_registration_type(cls, row, field):
@@ -701,7 +751,7 @@ class Registration:
         return self.__children
 
     @classmethod
-    def from_row(cls, row, locale):
+    def from_row(cls, row, locale, geocoder=None):
         """
         Return the application of a family who registered by entering
         information to an online form.
@@ -713,6 +763,9 @@ class Registration:
 
         :param locale: The locale of the online form that the family used to
             register to the school bus transportation service.
+
+        :param geocoder: An object `GoogleGeocoder` to convert the parents'
+            address(es) into geographical coordinates.
 
 
         :return: An object `Registration`.
@@ -747,7 +800,13 @@ class Registration:
         # List the parent(s) who submitted the application form.
         parents = []
         for i, parent_fields in enumerate(cls.PARENTS_FIELDS):
-            parent = cls.__parse_parent(row, parent_fields, locale, is_secondary_parent=i > 0)
+            parent = cls.__parse_parent(
+                row,
+                parent_fields,
+                locale,
+                geocoder=geocoder,
+                is_secondary_parent=i > 0)
+
             if parent is not None:
                 parents.append(parent)
 

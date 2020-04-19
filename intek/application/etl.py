@@ -39,6 +39,7 @@ from majormode.perseus.model.locale import Locale
 from majormode.perseus.utils import email_util
 import googleapiclient.discovery
 import googleapiclient.errors
+import simplekml
 
 from .geocoding import GoogleGeocoder
 from .model import PAYMENT_AMOUNT_NON_UPMD
@@ -192,24 +193,32 @@ def build_registration_rows(registration):
         row = [
             registration.registration_id if i == 0 else '',
             registration.registration_time.strftime("%Y-%m-%d %H:%M:%S") if i == 0 else '',
+            child.first_name,
+            child.last_name,
             child.fullname,
             child.dob.strftime('%Y-%m-%d'),
-            get_grade_name(child.grade_level)
+            child.grade_level
         ]
 
         for j, fields in enumerate(Registration.PARENTS_FIELDS):
             if i == 0 and j < len(registration.parents):
                 parent = registration.parents[j]
+
                 row.extend([
+                    parent.first_name,
+                    parent.last_name,
                     parent.fullname,
+                    str(parent.locale),
                     parent.email_address,
                     parent.phone_number,
-                    parent.home_address
+                    parent.formatted_address,
+                    parent.geocoded_address,
+                    parent.location and str(parent.location)
                 ])
             else:
-                row.extend([''] * 4)  # Fullname, email, phone, address
+                # Undefined secondary parent
+                row.extend([''] * 9)  # First name, last name, full name, locale, email, phone, formatted, address, geocoded address, location
 
-        row.append(('Y' if registration.is_ape_member else 'N') if i == 0 else '')
         rows.append(row)
 
     return rows
@@ -332,6 +341,35 @@ def expand_placeholders_value(content, placeholders, ignore_unused_placeholders=
     return content
 
 
+def export_kml(registrations, kml_file_path_name):
+    # Group the registrations by locations.
+    placemarks = collections.defaultdict(list)
+
+    for registration in registrations:
+        # Find the location of the primary parent
+        for parent in registration.parents:
+            if parent.is_primary_parent:
+                primary_location = parent.location
+                break
+
+        # Add the location of the primary parent, and the location of the
+        # secondary parent if different from the location of the primary parent.
+        for parent in registration.parents:
+            if parent.is_primary_parent or \
+               (parent.location and parent.location != primary_location):
+                placemarks[parent.location].append(registration)
+
+    # Generate the geographical map of all the distinct locations,
+    # calculating for each location the number of children living there.
+    kml = simplekml.Kml()
+
+    for location, registrations in placemarks.items():
+        children_count = sum([len(registration.children) for registration in registrations])
+        kml.newpoint(name=f"{children_count} 👦🏻👧🏻", coords=[(location.latitude, location.longitude)])
+
+    kml.save(kml_file_path_name)
+
+
 def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
     """
     Return the list of identifications of the registrations that have been
@@ -358,6 +396,42 @@ def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
     sheet_name = sheet_names[0]
     rows = read_google_sheet_values(spreadsheets_resource, spreadsheet_id, sheet_name, 'A3:M')
     return [int(''.join([c for c in values[0] if c.isdigit()])) for values in rows if values[0]]
+
+
+def filter_duplicate_registrations(registrations):
+    """
+    Return a list of registrations where duplicates have been removed.
+
+    A parent may have submitted an application several times.  This may
+    happen for instance when the parent realizes he has previously
+    submitted an application with missing or erroneous information.  The
+    parent then decides to submit a new application to replace the
+    previous one.
+
+
+    :param registrations: A list of objects `Registration`.
+
+
+    :return: A list of unique registrations.
+    """
+    # Sort registrations by reversed chronological order.
+    sorted_registrations = sorted(
+        registrations,
+        key=lambda registration: registration.registration_time,
+        reverse=True)
+
+    # Add registrations from the more recent to the first submitted ones,
+    # filtering out those that have been already added (the duplicated
+    # oldest registrations are filtered out0.
+    filtered_registrations = dict()
+    for registration in sorted_registrations:
+        if registration.registration_id not in filtered_registrations:
+            filtered_registrations[registration.registration_id] = registration
+
+    # Return the unique registrations sorted by chronological order.
+    return sorted(
+        filtered_registrations.values(),
+        key=lambda registration: registration.registration_time)
 
 
 def flatten_list(l):
@@ -657,7 +731,10 @@ def load_registrations_from_csv_file(csv_file_path_name, locale):
     ]
 
 
-def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, oauth2_token):
+def load_registrations_from_google_sheet(
+        spreadsheet_id,
+        spreadsheets_resource,
+        geocoder=None):
     """
     Load the information of the family registrations from the all sheets
     of a Google Sheets document.
@@ -670,8 +747,8 @@ def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, 
     :param spreadsheets_resource: An object `googleapiclient.discovery.Resource`
         returned by the Google API client library.
 
-    :param oauth2_token: A valid OAuth2 token that allows access to the
-        specified Google Sheets document.
+    :param geocoder: An object `GoogleGeocoder` to geocode the parents'
+        address(es).
 
 
     :return: A list of objects `Registration`.
@@ -699,7 +776,7 @@ def load_registrations_from_google_sheet(spreadsheet_id, spreadsheets_resource, 
             raise ValueError(f"the Google sheet name {sheet_name} doesn't correspond to a locale")
 
         registrations.extend([
-            Registration.from_row(row, locale)
+            Registration.from_row(row, locale, geocoder=geocoder)
             for row in [
                 values
                 for values in read_google_sheet_values(
@@ -876,13 +953,20 @@ def run(arguments):
     if not csv_file_path_name and not input_google_spreadsheet_id:
         raise ValueError("a CSV file or a Google spreadsheet ID must be passed")
 
-    # Checks that the personal name and the e-mail address of the author
+    # Check that the personal name and the e-mail address of the author
     # on behalf of whom the e-mails to be sent to the parents have been
     # passed to the command line.
     if not arguments.no_email \
-            and (not arguments.author_name or not arguments.author_email_address):
+       and (not arguments.author_name or not arguments.author_email_address):
         raise ValueError("the name and the e-mail of the author of the e-mails to be sent to "
                          "the parents must be passed")
+
+    # Build the geocoder object if the script needs to geocode parents'
+    # address(es).
+    if not arguments.no_geocoding and not arguments.google_api_key:
+        raise ValueError("a Google API key must be specified for geocoding address")
+
+    geocoder = None if arguments.no_geocoding else GoogleGeocoder(arguments.google_api_key)
 
     # Check whether the script needs to loop for even until the user
     # decides to stop it
@@ -929,7 +1013,7 @@ def run(arguments):
                 registrations = load_registrations_from_google_sheet(
                     input_google_spreadsheet_id,
                     spreadsheets_resource,
-                    oauth2_token)
+                    geocoder=geocoder)
 
             # Process and store the registrations in the master list.
             if output_google_spreadsheet_id:
@@ -956,7 +1040,7 @@ def run(arguments):
                         spreadsheets_resource,
                         output_google_spreadsheet_id)
 
-                    for registration in new_registrations:
+                    for registration in filter_duplicate_registrations(new_registrations):
                         process_registration(
                             registration,
                             smtp_connection_properties,
