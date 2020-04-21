@@ -346,18 +346,20 @@ def export_kml(registrations, kml_file_path_name):
     placemarks = collections.defaultdict(list)
 
     for registration in registrations:
-        # Find the location of the primary parent
-        for parent in registration.parents:
-            if parent.is_primary_parent:
-                primary_location = parent.location
-                break
+        # Retrieve the distinct locations of the parents of this registration.
+        logging.info(
+            "Finding distinct parents' home locations of the registration " 
+            f"{prettify_registration_id(registration.registration_id)}...")
 
-        # Add the location of the primary parent, and the location of the
-        # secondary parent if different from the location of the primary parent.
-        for parent in registration.parents:
-            if parent.is_primary_parent or \
-               (parent.location and parent.location != primary_location):
-                placemarks[parent.location].append(registration)
+        locations = set([
+            parent.location
+            for parent in registration.parents
+            if parent.location])
+
+        for location in locations:
+            placemarks[location].append(registration)
+
+        time.sleep(0.5)
 
     # Generate the geographical map of all the distinct locations,
     # calculating for each location the number of children living there.
@@ -365,9 +367,12 @@ def export_kml(registrations, kml_file_path_name):
 
     for location, registrations in placemarks.items():
         children_count = sum([len(registration.children) for registration in registrations])
-        kml.newpoint(name=f"{children_count} 👦🏻👧🏻", coords=[(location.latitude, location.longitude)])
+        families_count = len(registrations)
+        kml.newpoint(
+            name=f"{children_count}:{families_count}",
+            coords=[(location.longitude, location.latitude)])
 
-    kml.save(kml_file_path_name)
+    kml.save(os.path.realpath(os.path.expanduser(kml_file_path_name)))
 
 
 def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
@@ -1054,6 +1059,11 @@ def run(arguments):
 
                         row_count += len(registration.children)
 
+            # Generate the KML file with children's homes.
+            if arguments.output_kml_file_path_name:
+                export_kml(registrations, arguments.output_kml_file_path_name)
+
+            # Stop the script if the user didn't request it to run for ever.
             if not does_loop:
                 break
 

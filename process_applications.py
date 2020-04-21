@@ -190,6 +190,13 @@ def parse_arguments():
         required=False,
         help='require the script not to send e-mails to the parents who registered')
 
+    # Settings of the KML file to generate
+    parser.add_argument(
+        '--output-kml-file-path-name',
+        metavar='FILE',
+        required=False,
+        help="absolute path and name of the KML file to build with children' home")
+
     # Settings to request the script to keep running for ever.
     parser.add_argument(
         '--loop',
