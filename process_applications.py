@@ -149,7 +149,7 @@ def parse_arguments():
     parser.add_argument(
         '--smtp-username',
         required=False,
-        help="specify the username/email address to connect to the SMPT server"
+        help="specify the username/email address to connect to the SMTP server"
     )
 
     parser.add_argument(
@@ -168,29 +168,35 @@ def parse_arguments():
         dest='author_name',
         metavar='NAME',
         required=False,
-        help='specify the name of the author of the e-mail to send to the parents')
+        help="specify the name of the author of the e-mail to send to the parents")
 
     parser.add_argument(
         '--email-author-address',
         dest='author_email_address',
         metavar='EMAIL',
         required=False,
-        help='specify the mailbox to which the author of the e-mail suggests that '
-             'replies be sent.')
+        help="specify the mailbox to which the author of the e-mail suggests that "
+             "replies be sent.")
 
     parser.add_argument(
         '--email-template-path',
         required=False,
-        help='specify the absolute path name of the localized HTML e-mail templates')
+        help="specify the absolute path name of the localized HTML e-mail templates")
 
     # Settings to request the script not to send e-mail to parents.
     parser.add_argument(
         '--no-email',
         action='store_true',
         required=False,
-        help='require the script not to send e-mails to the parents who registered')
+        help="require the script not to send e-mails to the parents who registered")
 
     # Settings of the KML file to generate
+    parser.add_argument(
+        '--no-kml',
+        action='store_true',
+        required=False,
+        help="require the script not to generate a KML file with children's home")
+
     parser.add_argument(
         '--output-kml-file-path-name',
         metavar='FILE',
@@ -202,7 +208,7 @@ def parse_arguments():
         '--loop',
         action='store_true',
         required=False,
-        help='require the script to loop for ever until the user terminates it with Ctrl-C')
+        help="require the script to loop for ever until the user terminates it with Ctrl-C")
 
     return parser.parse_args()
 

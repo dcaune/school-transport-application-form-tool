@@ -1060,7 +1060,7 @@ def run(arguments):
                         row_count += len(registration.children)
 
             # Generate the KML file with children's homes.
-            if arguments.output_kml_file_path_name:
+            if not arguments.no_kml and arguments.output_kml_file_path_name:
                 export_kml(registrations, arguments.output_kml_file_path_name)
 
             # Stop the script if the user didn't request it to run for ever.
