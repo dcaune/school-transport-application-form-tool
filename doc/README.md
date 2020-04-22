@@ -111,7 +111,7 @@ Les enfants d'une même famille sont listés dans un groupe de lignes, une par e
 
 ![](./doc/google_sheet_master_list_02.jpg)
 
-Les informations concernant les enfants sont globalement les mêmes que celles saisies par les parents dans les formulaires en ligne :
+Les informations concernant un enfant sont globalement les mêmes que celles saisies par son parent dans l'un des formulaires en ligne :
 
 - Prénom de l'enfant (la première lettre de chaque prénom en majuscule, les autres lettres en minuscule)
 - Nom de famille de l'enfant (en lettres majuscules)
@@ -119,10 +119,14 @@ Les informations concernant les enfants sont globalement les mêmes que celles s
 - Date de naissance
 - Niveau de la classe de l'enfant durant l'année scolaire en cours
 
-Les informations concernant les parents proviennent également des données saisies par les parents dans les formulaires en ligne :
+Les informations concernant un parent proviennent également des données saisies par ce parent dans l'un formulaires en ligne, avec quelques autres données calculées :
 
-- Prénom de l'enfant (la première lettre de chaque prénom en majuscule, les autres lettres en minuscule)
-- Nom de famille de l'enfant (en lettres majuscules)
-- Nom complet de l'enfant (concaténation du prénom et du nom de l'enfant dans l'ordre culturel présumé de l'enfant)
-- Date de naissance
-- Niveau de la classe de l'enfant durant l'année scolaire en cours
+- Prénom du parent
+- Nom de famille du parent
+- Nom complet du parent
+- Langue du parent (déterminé pour le 1er parent de la langue du formulaire utilisé; déterminé pour le 2nd parent de son nom (e.g. vietnamien) ou par défault de la langue du formulaire utilisé)
+- Adresse de courrier électronique (en lettres minuscules)
+- Numéro de téléphone (sur 10 chiffres, et préfixé par l'index du pays)
+- Adresse de résidence telle qu'entrée par le parent
+- Adresse telle que revue par _Google Geocoding API_ (généralement mieux formatée que celle entrée par le parent)
+- Coordonnées géographiques (latitude, longitude) correspondant à l'adresse de résidence entrée par le parent
