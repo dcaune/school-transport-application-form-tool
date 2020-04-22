@@ -9,7 +9,7 @@ Cet outil utilise plusieurs applications de [_G Suite_](https://www.google.com/i
 
 _Note : si vous êtes une [Association de Parents d'Élèves](https://www.service-public.fr/associations/vosdroits/F1390) (APE), nous vous recommandons de vous enregistrer officiellement comme une [association loi 1901](https://www.associations.gouv.fr/immatriculation.html). La procédure d'enregistrement peut se faire de nos jours [en ligne](https://www.associations.gouv.fr/declaration-initiale.html#cas-e60395-1). Vous pourrez alors faire reconnaître votre association auprès de Google via leur partenaire [Solidatech](https://www.solidatech.fr). L'ensemble de la procédure prend entre 3 à 4 semaines_.
 
-## Étape 1: Formulaire(s) en Ligne
+## Formulaire(s) en Ligne
 
 Ce système de gestion des inscriptions des familles au transport scolaire utilise l'application [_Google Forms_](https://www.google.com/intl/fr/forms/about/) qui permet de créer des formulaires en ligne et de collecter automatiquement les réponses fournies par les parents.
 
@@ -101,9 +101,9 @@ Lorsque vous liez les formulaires, vous devez indiquer que vous souhaitez sélec
 
 Cependant, outre le fait que le format de chaque tableau, correspondant aux réponses d'un formulaire, n'est guère lisible, les réponses des parents se retrouvent dispersées dans plusieurs tableaux du tableur _Google Sheets_. Nous ne lirons donc pas directement ce document.
 
-## Étape 2: Liste Principale des Enfants et des Parents
+## Liste Principale des Enfants et des Parents
 
-Les membres de l'association, généralement non technomanes, vont utiliser un autre document _Google Sheets_ pour gérer les dossiers d'inscription des familles au transport scoliare de l'école. Ce document coloré présente les informations dans un format plus humainement compréhensible :
+Les membres de l'association, généralement non technomanes, vont utiliser un autre document _Google Sheets_ pour gérer les dossiers d'inscription des familles au transport scoliare de l'école. Ce document coloré présente les informations dans un format plus humainement compréhensible. Nous l'avons appelée la **liste principale des enfants et des parents** :
 
 ![](./doc/google_sheet_master_list_01.png)
 
@@ -130,3 +130,95 @@ Les informations concernant un parent proviennent également des données saisie
 - Adresse de résidence telle qu'entrée par le parent
 - Adresse telle que revue par _Google Geocoding API_ (généralement mieux formatée que celle entrée par le parent)
 - Coordonnées géographiques (latitude, longitude) correspondant à l'adresse de résidence entrée par le parent
+
+Les informations concernant les familles apparaissent automatiquement dans cette **liste principale des enfants et des parents** dès que les familles soumettent les données saisies dans les formulaires en ligne.
+
+## Comment s'opère cette Magie ?
+
+Comment les données des dossiers d'inscription des familles se retrouvent automatiquement, correctement formatées, dans la **liste principale des enfants et des parents**.
+
+Nous avons développé pour cela une petite application qui est exécutée via [l'interface en ligne de commande](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande) de votre ordinateur, encore appelée [l'invite de commande](https://www.youtube.com/watch?v=50H0tM-04qc).
+
+_Note : l'invite de commande est un outil permettant d'exécuter des actions avancées à l'aide de commandes textuelles. Il est disponible sous Linux, Mac et Windows, certes sous des formes différentes, mais le principe reste globalement le même._
+
+La commande à exécuter est `process_applications` (dans le sens, en français, de "traiter les demandes d'inscription"), à laquelle il faut adjoindre quelques paramètres que nous allons plus tard dans cette documentation.
+
+Cependant, avant de pouvoir exécuter cette commande, vous allez devoir installer notre application sur votre ordinateur. Cela se fait assez simplement.
+
+### Installation
+
+Nous avons écrit notre application avec le [language Python](<(<https://fr.wikipedia.org/wiki/Python_(langage)>)>) (version 3), language ô combien utilisé par les informaticiens de nos jours, et parfaitement adapté à ce type de traitement de l'information.
+
+Si vous utilisez Linux ou Mac, chance est que Python est déjà installé sur votre ordinateur. Si vous utilisez Windows, vous aurez d'abord à [installer Python](https://www.python.org/downloads/), ce qui se fait en quelques clics de souris.
+
+Pour vérifier si Python est installé sur votre ordinateur, le plus simple est de lancer l'invite de commande et d'y taper `python`. Si Python est installé, vous devriez voir un texte similaire à celui présenté ci-dessous :
+
+```text
+Python 3.7.0 (v3.7.0:1bf9cc5093, Jun 27 2018, 04:59:51) [MSC v.1914 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+```
+
+Nous vous conseillons d'installer [l'outil `pipenv`](https://github.com/pypa/pipenv), l'un des meilleurs outils Python qui simplifie grandement l'installation d'applications écrites en Python, comme la nôtre. Son installation se fait simplement via l'invite de commande de votre ordinateur. Entrez la commande suivante :
+
+```bash
+pip3 install pipenv
+```
+
+Vous devriez être alors en mesure d'installer notre application, toujours via l'invite de commande de votre ordinateur, en entrant la commande suivante :
+
+```bash
+pipenv install school-transport-application-form-tool
+```
+
+Pour vérifier que notre application est bien installée, entrez la commande suivante, encore et toujours via l'invite de commande de votre ordinateur (vous allez rapidement devenir un pro de l'invite de commande !):
+
+```bash
+process_applications --help
+```
+
+Vous devriez voir s'afficher le texte suivant :
+
+```text
+usage: process_applications [-h] [-f FILE] [-l LOCALE] [-c FILE] [-i ID]
+                            [-o ID] [--smtp-hostname SMTP_HOSTNAME]
+                            [--smtp-username SMTP_USERNAME]
+                            [--smtp-port SMTP_PORT]
+                            [--email-template-path EMAIL_TEMPLATE_PATH]
+                            [--loop]
+
+School Transport Application Form Tool
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FILE, --file FILE  specify the path and name of the CSV file containing
+                        information about children and parents
+  -l LOCALE, --locale LOCALE
+                        specify the locale (ISO 639-3 code) corresponding to
+                        the language of the application form
+  -c FILE, --google-credentials FILE
+                        absolute path and name of the Google credentials file
+  -i ID, --input-google-spreadsheet-id ID
+                        specify the identification of the Google spreadsheet
+                        containing the responses to the application forms
+  -o ID, --output-google-spreadsheet-id ID
+                        specify the identification of the Google spreadsheet
+                        to populate children and parents from the application
+                        forms
+  --smtp-hostname SMTP_HOSTNAME
+                        specify the host name of the machine on which the SMTP
+                        server is running
+  --smtp-username SMTP_USERNAME
+                        specify the username/email address to connect to the
+                        SMPT server
+  --smtp-port SMTP_PORT
+                        specify the TCP port or the local Unix-domain socket
+                        file extension on which the SMTP server is listening
+                        for connections
+  --email-template-path EMAIL_TEMPLATE_PATH
+                        specify the absolute path name of the localized HTML
+                        e-mail templates
+  --loop                require the script to loop for ever until the user
+                        terminates it with Ctrl-C
+```
+
+### Configuration
