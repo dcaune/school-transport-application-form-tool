@@ -5,7 +5,7 @@
 Cet outil est **libre** et **gratuit**, sous licence
 [Creative Commons CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/deed.fr) (attribution, pas d'utilisation commerciale).
 
-Cet outil utilise les [outils _G Suite_](https://www.google.com/intl/fr/nonprofits/offerings/apps-for-nonprofits/) dont vous pouvez bénéficier **gratuitement** en tant qu'**association**.
+Cet outil utilise plusieurs applications de [_G Suite_](https://www.google.com/intl/fr/nonprofits/offerings/apps-for-nonprofits/) dont vous pouvez bénéficier **gratuitement** en tant qu'**association**.
 
 _Note : si vous êtes une [Association de Parents d'Élèves](https://www.service-public.fr/associations/vosdroits/F1390) (APE), nous vous recommandons de vous enregistrer officiellement comme une [association loi 1901](https://www.associations.gouv.fr/immatriculation.html). La procédure d'enregistrement peut se faire de nos jours [en ligne](https://www.associations.gouv.fr/declaration-initiale.html#cas-e60395-1). Vous pourrez alors faire reconnaître votre association auprès de Google via leur partenaire [Solidatech](https://www.solidatech.fr). L'ensemble de la procédure prend entre 3 à 4 semaines_.
 
@@ -77,7 +77,7 @@ Les sections du 1er, 2ème et 3ème enfant comportent une question finale demand
 
 De façon similaire, la section du 1er parent comporte une question finale demandant si le parent souhaite ajouter un second parent. Si le parent ne souhaite pas ajouter un 2nd parent, le formulaire saute directement à la dernière section.
 
-### Liaison des Formulaires
+### Liaison des Formulaires à un unique Tableur
 
 Une fois que vous avez terminé la conception de vos formulaires _Google Forms_, vous allez les liér individuellement à un seul tableur _Google Sheets_ :
 
@@ -89,12 +89,16 @@ Lorsque vous liez le tout premier formulaire, vous devez indiquer que vous souha
 
 Par convention, nous renommerons chaque tableau par le code [ISO 639-3:2007 de la langue](https://docs.google.com/spreadsheets/d/1BnrNVSsFbgSuP_ERyAPEZ-LFpvKYfGlREsInTjJVvr4/edit?usp=sharing) correspondant au formulaire associé. Par exemple :
 
-| Nom par défault                         | Nom modifié                             |
-| --------------------------------------- | --------------------------------------- |
-| ![](./doc/google_form_responses_03.png) | ![](./doc/google_form_responses_04.png) |
+| Nom par défault                          | Nom modifié                              |
+| ---------------------------------------- | ---------------------------------------- |
+| ![](./doc/google_sheet_responses_03.png) | ![](./doc/google_sheet_responses_02.png) |
 
 Lorsque vous liez les formulaires, vous devez indiquer que vous souhaitez sélectionner le tableur _Google Sheets_ précédemment créé :
 
-| 1. Sélection du Tableur                 | 2. Création automatique du 2nd Tableau  | 3. Renommage du Tableau                 |
-| --------------------------------------- | --------------------------------------- | --------------------------------------- |
-| ![](./doc/google_form_responses_05.png) | ![](./doc/google_form_responses_06.png) | ![](./doc/google_form_responses_07.png) |
+| 1. Sélection du Tableur                 | 2. Création automatique du 2nd Tableau   | 3. Renommage du Tableau                  |
+| --------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| ![](./doc/google_form_responses_03.png) | ![](./doc/google_sheet_responses_03.png) | ![](./doc/google_sheet_responses_04.png) |
+
+## Étape 2: La Liste Principale des Enfants et des Parents
+
+![](google_sheets_master_list.png)
