@@ -19,7 +19,9 @@ Les parents de votre lycée français international ne parlent probablement pas 
 | ----------------------------------------------- | ------------------------------------------------- | ---------------------------------------------- | --------------------------------------------- |
 | ![](./doc/google_forms_fra.png)                 | ![](./doc/google_forms_vie.png)                   | ![](./doc/google_forms_eng.png)                | ![](./doc/google_forms_kor.png)               |
 
-### Édition du Formulaire en Ligne
+### Édition d'un Formulaire en Ligne
+
+#### Sections
 
 ![](./doc/google_forms_edition_01.png)
 
@@ -32,14 +34,45 @@ La section d'un enfant permet d'entrer les informations suivantes :
 - Date de naissance (type `Date`)
 - Classe durant l'année scolaire **en cours** (type `Dropdown`)
 
+La liste des classes est celle fournie ci-dessous. Certains établissements français ne font que le primaire et pourront donc réduire cette liste.
+
+| Niveau | Classe                        | Abbréviation |
+| ------ | ----------------------------- | ------------ |
+| 1      | Toute petite section          | TPS          |
+| 2      | Petite section                | PS           |
+| 3      | Moyenne section               | MS           |
+| 4      | Grande section                | GS           |
+| 5      | Cours préparatoire            | CP           |
+| 6      | Cours élémentaire, 1ère année | CE1          |
+| 7      | Cours élémentaire, 2ème année | CE2          |
+| 8      | Cours moyen, 1ère année       | CM1          |
+| 9      | Cours moyen, 2ème année       | CM2          |
+| 10     | Sixième                       | 6ème         |
+| 11     | Cinquième                     | 5ème         |
+| 12     | Quatrième                     | 4ème         |
+| 13     | Troisième                     | 3ème         |
+| 14     | Seconde                       | 2nde         |
+| 15     | Première                      | 1ère         |
+| 16     | Terminale                     | Tle          |
+
+_Note : la date de naissance est nécessaire pour des raisons de sécurité. Un enfant de moins de 12 n'est pas autorisés (sauf dérogation signée de leurs parents) à descendre du bus scolaire sans la présence obligatoire d'un adulte habilité à venir récupérer cet enfant._
+
 La section d'un parent permet d'entrer les informations suivantes :
 
 - Nom de famille du parent (type `Short answer`)
 - Prénom du parent (type `Short answer`)
 - Adresse de courriel (type `Short answer` avec validation de la réponse)
 - Numéro de téléphone (type `Short answer` avec validation de la réponse)
-- Adresse de la résidence des enfants (facultative dans le cas du 2nd parent, si l'adresse est identique à celle du 1er parent)
+- Adresse de la résidence des enfants (type `Paragraph` ; champ facultatif dans le cas du 2nd parent, si l'adresse est identique à celle du 1er parent)
 
-| Section Enfant                                 | Section Parent                                    |
-| ---------------------------------------------- | ------------------------------------------------- |
-| ![](doc/google_form_edition_child_section.png) | ![](./doc/google_form_edition_parent_section.png) |
+| Section Enfant                                   | Section Parent                                    |
+| ------------------------------------------------ | ------------------------------------------------- |
+| ![](./doc/google_form_edition_child_section.png) | ![](./doc/google_form_edition_parent_section.png) |
+
+### Navigation entre les Sections
+
+La navigation entre les différentes sections du formulaire est dynamique.
+
+Les sections du 1er, 2ème et 3ème enfant comportent une question finale demandant si le parent souhaite ajouter un autre enfant. Si le parent ne souhaite pas ajouter un 2ème, 3ème enfant ou 4ème enfant, le formulaire saute directement à la section du 1er parent.
+
+De façon similaire, la section du 1er parent comportent une question finale demandant si le parent souhaite ajouter un second parent. Si le parent ne souhaite pas ajouter un 2nd parent, le formulaire saute directement à la dernière section.
