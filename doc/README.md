@@ -103,10 +103,10 @@ Cependant, outre le fait que le format de chaque tableau, correspondant aux rép
 
 ## Étape 2: Liste Principale des Enfants et des Parents
 
-Les membres de l'association, généralement non _technicomaniaques_, vont utiliser un autre document _Google Sheets_, coloré, et présentant tous les enfants enregistrés au transport scolaire, leurs parents, dans un format humainement compréhensible :
+Les membres de l'association, généralement non technomanes, vont utiliser un autre document _Google Sheets_ pour gérer les dossiers d'inscription des familles au transport scoliare de l'école. Ce document coloré présente les informations dans un format plus humainement compréhensible :
 
 ![](./doc/google_sheet_master_list_01.png)
 
-Les informations de chaque enfant sont affichées sur une ligne du tableau. Les enfants d'une même famille se suivent sur des lignes consécutives. Les informarions des parents de ces enfants sont affichées sur la ligne du premier enfant.
+Les enfants d'une même famille sont listés par groupe de lignes, une par enfant. Les parents de ces enfants sont listés sur la même ligne que le premier enfant. Le numéro de dossier d'inscription et la date d'inscription sont également définis sur la même que le premier enfant :
 
 ![](./doc/google_sheet_master_list_02.jpg)
