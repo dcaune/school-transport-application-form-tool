@@ -109,4 +109,4 @@ Les membres de l'association, généralement non _technicomaniaques_, vont utili
 
 Les informations de chaque enfant sont affichées sur une ligne du tableau. Les enfants d'une même famille se suivent sur des lignes consécutives. Les informarions des parents de ces enfants sont affichées sur la ligne du premier enfant.
 
-![](./doc/google_sheet_master_list_02.png)
+![](./doc/google_sheet_master_list_02.jpg)
