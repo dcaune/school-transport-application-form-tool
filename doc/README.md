@@ -99,6 +99,14 @@ Lorsque vous liez les formulaires, vous devez indiquer que vous souhaitez sélec
 | --------------------------------------- | ---------------------------------------- | ---------------------------------------- |
 | ![](./doc/google_form_responses_03.png) | ![](./doc/google_sheet_responses_03.png) | ![](./doc/google_sheet_responses_04.png) |
 
-## Étape 2: La Liste Principale des Enfants et des Parents
+Cependant, outre le fait que le format de chaque tableau, correspondant aux réponses d'un formulaire, n'est guère lisible, les réponses des parents se retrouvent dispersées dans plusieurs tableaux du tableur _Google Sheets_. Nous ne lirons donc pas directement ce document.
 
-![](google_sheets_master_list.png)
+## Étape 2: Liste Principale des Enfants et des Parents
+
+Les membres de l'association, généralement non _technicomaniaques_, vont utiliser un autre document _Google Sheets_, coloré, et présentant tous les enfants enregistrés au transport scolaire, leurs parents, dans un format humainement compréhensible :
+
+![](google_sheet_master_list_01.png)
+
+Les informations de chaque enfant sont affichées sur une ligne du tableau. Les enfants d'une même famille se suivent sur des lignes consécutives. Les informarions des parents de ces enfants sont affichées sur la ligne du premier enfant.
+
+![](google_sheet_master_list_02.png)
