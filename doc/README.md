@@ -107,6 +107,22 @@ Les membres de l'association, généralement non technomanes, vont utiliser un a
 
 ![](./doc/google_sheet_master_list_01.png)
 
-Les enfants d'une même famille sont listés par groupe de lignes, une par enfant. Les parents de ces enfants sont listés sur la même ligne que le premier enfant. Le numéro de dossier d'inscription et la date d'inscription sont également définis sur la même que le premier enfant :
+Les enfants d'une même famille sont listés dans un groupe de lignes, une par enfant. Les parents de ces enfants sont listés sur la même ligne que le premier enfant. Le numéro de dossier d'inscription et la date d'inscription sont également définis sur la même que le premier enfant :
 
 ![](./doc/google_sheet_master_list_02.jpg)
+
+Les informations concernant les enfants sont globalement les mêmes que celles saisies par les parents dans les formulaires en ligne :
+
+- Prénom de l'enfant (la première lettre de chaque prénom en majuscule, les autres lettres en minuscule)
+- Nom de famille de l'enfant (en lettres majuscules)
+- Nom complet de l'enfant (concaténation du prénom et du nom de l'enfant dans l'ordre culturel présumé de l'enfant)
+- Date de naissance
+- Niveau de la classe de l'enfant durant l'année scolaire en cours
+
+Les informations concernant les parents proviennent également des données saisies par les parents dans les formulaires en ligne :
+
+- Prénom de l'enfant (la première lettre de chaque prénom en majuscule, les autres lettres en minuscule)
+- Nom de famille de l'enfant (en lettres majuscules)
+- Nom complet de l'enfant (concaténation du prénom et du nom de l'enfant dans l'ordre culturel présumé de l'enfant)
+- Date de naissance
+- Niveau de la classe de l'enfant durant l'année scolaire en cours
