@@ -105,8 +105,8 @@ Cependant, outre le fait que le format de chaque tableau, correspondant aux rép
 
 Les membres de l'association, généralement non _technicomaniaques_, vont utiliser un autre document _Google Sheets_, coloré, et présentant tous les enfants enregistrés au transport scolaire, leurs parents, dans un format humainement compréhensible :
 
-![](google_sheet_master_list_01.png)
+![](./doc/google_sheet_master_list_01.png)
 
 Les informations de chaque enfant sont affichées sur une ligne du tableau. Les enfants d'une même famille se suivent sur des lignes consécutives. Les informarions des parents de ces enfants sont affichées sur la ligne du premier enfant.
 
-![](google_sheet_master_list_02.png)
+![](./doc/google_sheet_master_list_02.png)
