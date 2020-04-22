@@ -75,4 +75,26 @@ La navigation entre les différentes sections du formulaire est dynamique.
 
 Les sections du 1er, 2ème et 3ème enfant comportent une question finale demandant si le parent souhaite ajouter un autre enfant. Si le parent ne souhaite pas ajouter un 2ème, 3ème enfant ou 4ème enfant, le formulaire saute directement à la section du 1er parent.
 
-De façon similaire, la section du 1er parent comportent une question finale demandant si le parent souhaite ajouter un second parent. Si le parent ne souhaite pas ajouter un 2nd parent, le formulaire saute directement à la dernière section.
+De façon similaire, la section du 1er parent comporte une question finale demandant si le parent souhaite ajouter un second parent. Si le parent ne souhaite pas ajouter un 2nd parent, le formulaire saute directement à la dernière section.
+
+### Liaison des Formulaires
+
+Une fois que vous avez terminé la conception de vos formulaires _Google Forms_, vous allez les liér individuellement à un seul tableur _Google Sheets_ :
+
+![](./doc/google_form_responses_01.png)
+
+Lorsque vous liez le tout premier formulaire, vous devez indiquer que vous souhaitez créer un nouveau tableur _Google Sheets_ :
+
+![](./doc/google_form_responses_02.png)
+
+Par convention, nous renommerons chaque tableau par le code [ISO 639-3:2007 de la langue](https://docs.google.com/spreadsheets/d/1BnrNVSsFbgSuP_ERyAPEZ-LFpvKYfGlREsInTjJVvr4/edit?usp=sharing) correspondant au formulaire associé. Par exemple :
+
+| Nom par défault                         | Nom modifié                             |
+| --------------------------------------- | --------------------------------------- |
+| ![](./doc/google_form_responses_03.png) | ![](./doc/google_form_responses_04.png) |
+
+Lorsque vous liez les formulaires, vous devez indiquer que vous souhaitez sélectionner le tableur _Google Sheets_ précédemment créé :
+
+| 1. Sélection du Tableur                 | 2. Création automatique du 2nd Tableau  | 3. Renommage du Tableau                 |
+| --------------------------------------- | --------------------------------------- | --------------------------------------- |
+| ![](./doc/google_form_responses_05.png) | ![](./doc/google_form_responses_06.png) | ![](./doc/google_form_responses_07.png) |
