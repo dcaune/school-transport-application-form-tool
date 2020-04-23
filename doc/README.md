@@ -135,7 +135,7 @@ Les informations concernant les familles apparaissent automatiquement dans cette
 
 ## Comment s'opère cette Magie ?
 
-Comment les données des dossiers d'inscription des familles se retrouvent automatiquement, correctement formatées, dans la **liste principale des enfants et des parents**.
+Comment les données des dossiers d'inscription des familles se retrouvent automatiquement, correctement formatées, dans la **liste principale des enfants et des parents**?
 
 Nous avons développé pour cela une petite application qui est exécutée via [l'interface en ligne de commande](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande) de votre ordinateur, encore appelée [l'invite de commande](https://www.youtube.com/watch?v=50H0tM-04qc).
 
