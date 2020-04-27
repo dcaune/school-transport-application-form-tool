@@ -158,7 +158,7 @@ Cependant, avant de pouvoir exécuter cette commande, vous allez devoir installe
 
 ### Installation
 
-Nous avons écrit notre application avec le [language Python](<(<https://fr.wikipedia.org/wiki/Python_(langage)>)>) (version 3), language ô combien utilisé par les informaticiens de nos jours, et parfaitement adapté à ce type de traitement de l'information.
+Nous avons écrit notre application avec le [language Python](<https://fr.wikipedia.org/wiki/Python_(langage)>) (version 3), language ô combien utilisé par les informaticiens de nos jours, et parfaitement adapté à ce type de traitement de l'information.
 
 Si vous utilisez Linux ou Mac, chance est que Python est déjà installé sur votre ordinateur. Si vous utilisez Windows, vous aurez d'abord à [installer Python](https://www.python.org/downloads/), ce qui se fait en quelques clics de souris.
 
