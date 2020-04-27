@@ -71,7 +71,18 @@ La section d'un parent permet d'entrer les informations suivantes :
 
 ### Navigation entre les Sections
 
-La navigation entre les différentes sections du formulaire est dynamique.
+La navigation entre les différentes sections du formulaire est dynamique :
+
+| #   | Titre        | Suivante |
+| --- | ------------ | -------- |
+| 1   | Introduction | 2        |
+| 2   | 1er Enfant   | 3 ou 6   |
+| 3   | 2ème Enfant  | 4 ou 6   |
+| 4   | 3ème Enfant  | 5 ou 6   |
+| 5   | 4ème Enfant  | 6        |
+| 6   | 1er Parent   | 7 ou 8   |
+| 7   | 2nd Parent   | 8        |
+| 8   | Soumission   |          |
 
 Les sections du 1er, 2ème et 3ème enfant comportent une question finale demandant si le parent souhaite ajouter un autre enfant. Si le parent ne souhaite pas ajouter un 2ème, 3ème enfant ou 4ème enfant, le formulaire saute directement à la section du 1er parent.
 
