@@ -152,7 +152,7 @@ _Note : l'invite de commande est un outil permettant d'exécuter des actions ava
 
 Cette application permet de récupérer, automatiquement, de façon régulière, les réponses des parents aux formulaires d'inscription de leurs enfants au transport scolaire, d'ajouter les informations dans la **liste principale des enfants et des parents** et d'envoyer un courrier électronique aux parents pour les informer du numéro de leur dossier d'inscription :
 
-![](school-transport-application-form-tool_overview.png)
+![](doc/school-transport-application-form-tool_overview.png)
 
 La commande à exécuter est `process_applications` (dans le sens, en français, de "traiter les demandes d'inscription"), à laquelle il faut adjoindre quelques paramètres que nous allons plus tard dans cette documentation.
 
