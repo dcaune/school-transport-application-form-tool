@@ -139,18 +139,20 @@ Les informations concernant un parent proviennent également des données saisie
 - Adresse de courrier électronique (en lettres minuscules)
 - Numéro de téléphone (sur 10 chiffres, et préfixé par l'index du pays)
 - Adresse de résidence telle qu'entrée par le parent
-- Adresse telle que revue par _Google Geocoding API_ (généralement mieux formatée que celle entrée par le parent)
+- Adresse telle que revue par _Google Geocoding API_ (adresse généralement mieux formatée que celle entrée par le parent)
 - Coordonnées géographiques (latitude, longitude) correspondant à l'adresse de résidence entrée par le parent
 
 Les informations concernant les familles apparaissent automatiquement dans cette **liste principale des enfants et des parents** dès que les familles soumettent les données saisies dans les formulaires en ligne.
 
-## Comment s'opère cette Magie ?
+## Traitement des Inscriptions en Ligne
 
-Comment les données des dossiers d'inscription des familles se retrouvent automatiquement, correctement formatées, dans la **liste principale des enfants et des parents**?
-
-Nous avons développé pour cela une petite application qui est exécutée via [l'interface en ligne de commande](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande) de votre ordinateur, encore appelée [l'invite de commande](https://www.youtube.com/watch?v=50H0tM-04qc).
+Comment les données des dossiers d'inscription des familles se retrouvent automatiquement, correctement formatées, dans la **liste principale des enfants et des parents** ? Nous avons développé pour cela une petite application, **School Transport Application Form Tool**, qui est exécutée via [l'interface en ligne de commande](https://fr.wikipedia.org/wiki/Interface_en_ligne_de_commande) de votre ordinateur, encore appelée [l'invite de commande](https://www.youtube.com/watch?v=50H0tM-04qc).
 
 _Note : l'invite de commande est un outil permettant d'exécuter des actions avancées à l'aide de commandes textuelles. Il est disponible sous Linux, Mac et Windows, certes sous des formes différentes, mais le principe reste globalement le même._
+
+Cette application permet de récupérer, automatiquement, de façon régulière, les réponses des parents aux formulaires d'inscription de leurs enfants au transport scolaire, d'ajouter les informations dans la **liste principale des enfants et des parents** et d'envoyer un courrier électronique aux parents pour les informer du numéro de leur dossier d'inscription :
+
+![](school-transport-application-form-tool_overview.png)
 
 La commande à exécuter est `process_applications` (dans le sens, en français, de "traiter les demandes d'inscription"), à laquelle il faut adjoindre quelques paramètres que nous allons plus tard dans cette documentation.
 
