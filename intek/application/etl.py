@@ -359,8 +359,6 @@ def export_kml(registrations, kml_file_path_name):
         for location in locations:
             placemarks[location].append(registration)
 
-        time.sleep(0.5)
-
     # Generate the geographical map of all the distinct locations,
     # calculating for each location the number of children living there.
     kml = simplekml.Kml()
@@ -1023,7 +1021,7 @@ def run(arguments):
             # Process and store the registrations in the master list.
             if output_google_spreadsheet_id:
                 # Retrieve the list of the registrations that have been already
-                # processed and stored in the master list (the ouput Google Sheets
+                # processed and stored in the master list (the output Google Sheets
                 # document).
                 processed_registration_ids = fetch_processed_registration_ids(
                     spreadsheets_resource,
@@ -1070,12 +1068,12 @@ def run(arguments):
             logging.info("Breathing a little bit...")
             time.sleep(DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION)
 
-        except (googleapiclient.errors.HttpError, socket.timeout):
-            traceback.print_exc()
-            time.sleep(DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION)
-
         except KeyboardInterrupt:
             logging.info('Stopping the script...')
+
+        except:
+            traceback.print_exc()
+            time.sleep(DEFAULT_IDLE_TIME_BETWEEN_CONSECUTIVE_EXECUTION)
 
 
 def send_registration_confirmation_email(
