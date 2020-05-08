@@ -537,7 +537,7 @@ class Registration:
         )
     ]
 
-    # Number of digits that composes a application ID.
+    # Number of digits that composes an application ID.
     REGISTRATION_ID_DEFAULT_DIGIT_NUMBER = 9
 
     # Subscription fees of the family to register to the school bus
