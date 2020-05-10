@@ -683,8 +683,12 @@ $$;
  *
  * The function reads family applications in sequence from the table
  * `gf_registration`.
+ *
+ *
+ * @param p_school_id: identification of the school the children attend.
  */
-CREATE OR REPLACE FUNCTION gf_main()
+CREATE OR REPLACE FUNCTION gf_main(
+    IN p_school_id uuid)
   RETURNS smallint
   VOLATILE
   LANGUAGE PLPGSQL
@@ -734,7 +738,8 @@ BEGIN
         v_record.child_last_name,
         v_record.child_full_name,
         v_record.child_dob,
-        v_record.grade_level);
+        v_record.grade_level,
+        p_school_id => p_school_id);
 
     -- Register the first parent when processing the record of the first
     -- registered child of a family.

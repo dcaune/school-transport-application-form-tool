@@ -21,4 +21,4 @@ DELETE FROM gf_registration;
 
 \copy gf_registration FROM './registrations.csv' DELIMITER ',' CSV;
 
-SELECT gf_main();
+SELECT gf_main('836dff6a-bd7b-11e7-b6f1-0008a20c190f');
