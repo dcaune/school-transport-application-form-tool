@@ -1011,7 +1011,4 @@ def send_registration_confirmation_email(
             parent_email_addresses,
             email_subject,
             email_content,
-            file_path_names=get_registration_confirmation_email_attachment_file_path_name(
-                registration.locale,
-                template_path),
             port_number=smtp_connection_properties.port_number)
