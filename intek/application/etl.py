@@ -1002,6 +1002,9 @@ def send_registration_confirmation_email(
         parent_email_addresses = [parent.email_address for parent in parents]
 
         logging.info(f'Sending email in "{locale}" to {", ".join(parent_email_addresses)}...')
+
+        attachment_file_path_name = os.path.join(template_path, 'instructions.jpg')
+
         email_util.send_email(
             smtp_connection_properties.hostname,
             smtp_connection_properties.username,
@@ -1011,4 +1014,5 @@ def send_registration_confirmation_email(
             parent_email_addresses,
             email_subject,
             email_content,
+            file_path_names=attachment_file_path_name,
             port_number=smtp_connection_properties.port_number)
