@@ -235,3 +235,5 @@ optional arguments:
 ```
 
 ### Configuration
+
+#### Autorisation d'Accès Google Sheets
