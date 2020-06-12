@@ -342,6 +342,12 @@ def expand_placeholders_value(content, placeholders, ignore_unused_placeholders=
 
 
 def export_kml(registrations, kml_file_path_name):
+    """
+
+    :param registrations:
+    :param kml_file_path_name:
+    :return:
+    """
     # Group the registrations by locations.
     placemarks = collections.defaultdict(list)
 
@@ -366,8 +372,14 @@ def export_kml(registrations, kml_file_path_name):
     for location, registrations in placemarks.items():
         children_count = sum([len(registration.children) for registration in registrations])
         families_count = len(registrations)
+        description = ', '.join([
+            prettify_registration_id(registration.registration_id)
+            for registration in registrations
+        ])
+
         kml.newpoint(
-            name=f"{children_count}:{families_count}",
+            name=f"{children_count} ({families_count})",
+            description=description,
             coords=[(location.longitude, location.latitude)])
 
     kml.save(os.path.realpath(os.path.expanduser(kml_file_path_name)))
@@ -992,7 +1004,7 @@ def run(arguments):
             GOOGLE_SPREADSHEET_SCOPES,
             google_credentials_file_path_name)
 
-        service = googleapiclient.discovery.build('sheets', 'v4', credentials=oauth2_token)
+        service = googleapiclient.discovery.build('sheets', 'v4', credentials=oauth2_token, cache_discovery=False)
         spreadsheets_resource = service.spreadsheets()
 
     # Execute the main loop of the application.
