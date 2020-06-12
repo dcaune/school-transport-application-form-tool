@@ -1003,7 +1003,8 @@ def send_registration_confirmation_email(
 
         logging.info(f'Sending email in "{locale}" to {", ".join(parent_email_addresses)}...')
 
-        attachment_file_path_name = os.path.join(template_path, 'instructions.jpg')
+        instructions_image_file_path_name = os.path.join(template_path, 'instructions.jpg')
+        instructions_text_file_path_name = os.path.join(template_path, '20200525 - Ultime relance cash.pdf')
 
         email_util.send_email(
             smtp_connection_properties.hostname,
@@ -1014,5 +1015,5 @@ def send_registration_confirmation_email(
             parent_email_addresses,
             email_subject,
             email_content,
-            file_path_names=attachment_file_path_name,
+            file_path_names=[attachment_file_path_name, instructions_text_file_path_name],
             port_number=smtp_connection_properties.port_number)
