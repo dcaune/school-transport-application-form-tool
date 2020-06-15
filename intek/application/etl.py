@@ -1015,5 +1015,8 @@ def send_registration_confirmation_email(
             parent_email_addresses,
             email_subject,
             email_content,
-            file_path_names=[attachment_file_path_name, instructions_text_file_path_name],
+            file_path_names=[
+                instructions_image_file_path_name,
+                instructions_text_file_path_name
+            ],
             port_number=smtp_connection_properties.port_number)
