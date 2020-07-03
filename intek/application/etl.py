@@ -1004,7 +1004,7 @@ def send_registration_confirmation_email(
         logging.info(f'Sending email in "{locale}" to {", ".join(parent_email_addresses)}...')
 
         instructions_image_file_path_name = os.path.join(template_path, 'instructions.jpg')
-        instructions_text_file_path_name = os.path.join(template_path, '20200525 - Ultime relance cash.pdf')
+        instructions_text_file_path_name = os.path.join(template_path, '20200702 - Paiement ete 2020.pdf')
 
         email_util.send_email(
             smtp_connection_properties.hostname,
