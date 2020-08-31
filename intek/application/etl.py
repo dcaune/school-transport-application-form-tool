@@ -348,7 +348,7 @@ def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
         have been already processed so far.
 
 
-    :raise ValueError: if the Google Sheets has more than one sheet.
+    :raise ValueError: If the Google Sheets has more than one sheet.
     """
     sheet_names = get_sheet_names(spreadsheets_resource, spreadsheet_id)
     if len(sheet_names) > 1:
@@ -356,6 +356,13 @@ def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
 
     sheet_name = sheet_names[0]
     rows = read_google_sheet_values(spreadsheets_resource, spreadsheet_id, sheet_name, 'A3:M')
+
+    for i, values in enumerate(rows):
+        if values[0]:
+            registration_id = ''.join([c for c in values[0] if c.isdigit()])
+            print(f"{i}: {registration_id}")
+            v = int(registration_id)
+
     return [int(''.join([c for c in values[0] if c.isdigit()])) for values in rows if values[0]]
 
 
