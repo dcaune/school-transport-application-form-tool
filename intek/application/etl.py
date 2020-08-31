@@ -357,11 +357,12 @@ def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
     sheet_name = sheet_names[0]
     rows = read_google_sheet_values(spreadsheets_resource, spreadsheet_id, sheet_name, 'A3:M')
 
-    for i, values in enumerate(rows):
-        if values[0]:
-            registration_id = ''.join([c for c in values[0] if c.isdigit()])
-            print(f"{i}: {registration_id}")
-            v = int(registration_id)
+    # @note: Debuging iformation
+    # for i, values in enumernate(rows):
+    #     if values[0]:
+    #         registration_id = ''.join([c for c in values[0] if c.isdigit()])
+    #         print(f"{i}: {registration_id}")
+    #         v = int(registration_id)
 
     return [int(''.join([c for c in values[0] if c.isdigit()])) for values in rows if values[0]]
 
