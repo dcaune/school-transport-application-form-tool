@@ -256,7 +256,7 @@ $$;
  *
  * @param p_locale: Language spoken by the child.
  *
- * @param p_is_allowed_to_get_off_school_bus_alone: Indicate whether the
+ * @param p_get_off_school_bus_unaccompanied: Indicate whether the
  *     child is authorised to alight from the school bus that brings him
  *     home without the presence of a guardian of him (e.g., legal
  *     guardian or childminder).
@@ -272,12 +272,12 @@ CREATE OR REPLACE FUNCTION gf_insert_child(
     IN p_school_id uuid,
     IN p_grade_level smallint,
     IN p_locale text,
-    IN p_is_allowed_to_get_off_school_bus_alone boolean)
+    IN p_get_off_school_bus_unaccompanied boolean)
   RETURNS uuid
   VOLATILE
   LANGUAGE SQL
 AS $$
-  INSERT INTO child(
+  INSERT INTO child (
       account_type,
       first_name,
       last_name,
@@ -286,7 +286,7 @@ AS $$
       school_id,
       grade_level,
       locale,
-      get_off_school_bus_alone)
+      get_off_school_bus_unaccompanied)
     VALUES
       ('ghost',
        p_first_name,
@@ -296,7 +296,7 @@ AS $$
        p_school_id,
        p_grade_level,
        p_locale,
-       p_is_allowed_to_get_off_school_bus_alone)
+       p_get_off_school_bus_unaccompanied)
     RETURNING
       account_id;
 $$;
@@ -495,7 +495,7 @@ $$;
  * @param p_grade_level: Number of the year the child has reached in the
  *     educational stage of the school he attends.
  *
- * @param p_minimal_age_for_getting_off_school_bus_alone: Minimal age of
+ * @param p_minimal_age_for_getting_off_school_bus_unaccompanied: Minimal age of
  *     a child to be allowed to get off a school bus  without the
  *     presence of a guardian of him (e.g., legal guardian or childminder).
  *
@@ -514,7 +514,7 @@ CREATE OR REPLACE FUNCTION gf_register_child(
     IN p_dob date,
     IN p_grade_level smallint,
     IN p_locale text = 'fra',
-    IN p_minimal_age_for_getting_off_school_bus_alone smallint = 12,
+    IN p_minimal_age_for_getting_off_school_bus_unaccompanied smallint = 12,
     IN p_school_id uuid = NULL)
   RETURNS uuid
   VOLATILE
@@ -523,7 +523,7 @@ AS $$
 DECLARE
   v_account_id uuid;
   v_age_at_school_year_start_date smallint;
-  v_is_allowed_to_get_off_school_bus_alone boolean = false;
+  v_is_allowed_to_get_off_school_bus_unaccompanied boolean = false;
   v_school_year_start_date date;
 BEGIN
   v_account_id = gf_find_child(p_full_name, p_dob);
@@ -531,8 +531,10 @@ BEGIN
   IF v_account_id IS NULL THEN
     v_school_year_start_date = (date_part('year', CURRENT_DATE) || '-09-04')::date;
     v_age_at_school_year_start_date = extract(year from age(v_school_year_start_date, p_dob));
-    v_is_allowed_to_get_off_school_bus_alone =
-        v_age_at_school_year_start_date > p_minimal_age_for_getting_off_school_bus_alone;
+    v_is_allowed_to_get_off_school_bus_unaccompanied =
+        v_age_at_school_year_start_date > p_minimal_age_for_getting_off_school_bus_unaccompanied;
+
+    RAISE NOTICE '[WARNING] Registering child %...', p_full_name;
 
     v_account_id = gf_insert_child(
         p_first_name,
@@ -542,7 +544,7 @@ BEGIN
         p_school_id,
         p_grade_level,
         p_locale,
-        v_is_allowed_to_get_off_school_bus_alone);
+        v_is_allowed_to_get_off_school_bus_unaccompanied);
   ELSE
     RAISE NOTICE '[WARNING] Child % already registered!', p_full_name;
   END IF;
@@ -713,6 +715,8 @@ BEGIN
         *
       FROM
         gf_registration
+      ORDER BY
+        line_number
   LOOP
     -- If this record corresponds to the application of a new family, clear
     -- the previous information cached into local variables.

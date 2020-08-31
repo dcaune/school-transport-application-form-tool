@@ -43,5 +43,8 @@ CREATE TABLE gf_registration (
   parent2_phone_number text NULL,
   parent2_home_formatted_address text NULL,
   parent2_home_geocoded_address text NULL,
-  parent2_home_location text NULL
+  parent2_home_location text NULL,
+
+  is_enabled boolean NULL,
+  line_number int NOT NULL
 );

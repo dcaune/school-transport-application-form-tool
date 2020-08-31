@@ -20,5 +20,45 @@
 DELETE FROM gf_registration;
 
 \copy gf_registration FROM './tmp/registrations.csv' DELIMITER ',' CSV;
-
 SELECT gf_main('836dff6a-bd7b-11e7-b6f1-0008a20c190f');
+
+
+
+
+SELECT SUM(is_signed::int) AS signed, SUM(1-is_signed::int) AS not_signed FROM gf_contract;
+
+SELECT
+    '(' || ST_X(location)::text || ', ' || ST_Y(location)::text || ')' AS coordinates,
+    (SELECT registration_id FROM gf_contract WHERE primary_account_id = account_id) AS registration_id
+  FROM
+    place
+  INNER JOIN (
+    -- Find the location of the families who has signed yet.
+    SELECT
+        COUNT(*) AS family_count,
+        location
+      FROM
+        gf_contract
+      INNER JOIN place
+        ON place.account_id = primary_account_id
+      WHERE
+        NOT is_signed
+      GROUP BY
+        location
+      HAVING
+        COUNT(*) > 5
+  ) AS contract_location
+    USING (location)
+  WHERE
+    account_id IN (
+      SELECT
+          primary_account_id
+        FROM
+          gf_contract
+        WHERE
+          NOT is_signed)
+  ORDER BY
+    coordinates,
+    registration_id;
+
+

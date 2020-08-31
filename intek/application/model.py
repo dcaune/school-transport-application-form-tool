@@ -274,9 +274,18 @@ class Parent(Person):
 
 
         :return: The e-mail address removed from leading and trailing space
-            characters, and all the letters lower cased.
+            characters, and all the letters lower cased, or `None` if the
+            email address is not defined.
+
+
+        :raise ValueError: If the argument `email_address` is not compliant
+            with RFC 2822.
         """
         email_address_ = email_address.strip().lower()
+
+        if not email_address:
+            return None
+
         if not string_util.is_email_address(email_address_):
             raise ValueError(f"invalid email address {email_address_}")
 
@@ -296,13 +305,16 @@ class Parent(Person):
             10 digits.
 
 
-        :return: A string representation of an international phone number,
-            starting with `+84.`.
+        :return: A string representation of an international phone number
+            starting with `+84.`, or `None` if the phone number is not defined.
 
 
         :raise ValueError: If the argument `phone_number` is not composed of
             9 or 10 digits only.
         """
+        if not phone_number:
+            return None
+
         if not phone_number.isdigit():
             raise ValueError(f"invalid phone number {phone_number}")
 
