@@ -357,14 +357,20 @@ def fetch_processed_registration_ids(spreadsheets_resource, spreadsheet_id):
     sheet_name = sheet_names[0]
     rows = read_google_sheet_values(spreadsheets_resource, spreadsheet_id, sheet_name, 'A3:M')
 
-    # @note: Debuging iformation
-    # for i, values in enumernate(rows):
-    #     if values[0]:
-    #         registration_id = ''.join([c for c in values[0] if c.isdigit()])
-    #         print(f"{i}: {registration_id}")
-    #         v = int(registration_id)
+    # @note: Debugging information
+    for i, values in enumerate(rows):
+        if values[0]:
+            registration_id = ''.join([c for c in values[0] if c.isdigit()])
+            print(f"{i}: {registration_id}")
+            v = int(registration_id)  # Raise an exception if invalid
 
-    return [int(''.join([c for c in values[0] if c.isdigit()])) for values in rows if values[0]]
+    registration_ids = [
+        int(''.join([c for c in values[0] if c.isdigit()]))
+        for values in rows
+        if values[0]
+    ]
+
+    return registration_ids
 
 
 def flatten_list(l):
