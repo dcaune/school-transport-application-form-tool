@@ -21,6 +21,41 @@ DELETE FROM gf_registration;
 
 \copy gf_registration FROM './tmp/registrations.csv' DELIMITER ',' CSV;
 SELECT gf_main('836dff6a-bd7b-11e7-b6f1-0008a20c190f');
+SELECT gf_set_parents_password();
+
+-- Set parent's account password.
+UPDATE
+    account
+  SET
+    password = md5(replace(foo.registration_id, '-', ''))
+  FROM (
+    SELECT
+      account_id,
+      registration_id
+    FROM
+      account_contact
+    INNER JOIN (
+      SELECT
+          registration_id,
+          parent1_email_address AS email_address
+        FROM
+          gf_registration
+      UNION
+      SELECT
+          registration_id,
+          parent2_email_address AS email_address
+        FROM
+          gf_registration) AS foo
+      ON (account_contact.value = foo.email_address)
+    WHERE
+      account_contact.name = 'EMAIL'
+  ) AS foo
+  WHERE
+    account.account_id = foo.account_id;
+
+
+
+
 
 
 

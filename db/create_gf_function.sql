@@ -808,3 +808,46 @@ BEGIN
   RETURN v_record_count;
 END;
 $$;
+
+
+/**
+ * Set the password of the parent accounts freshly created.
+ *
+ * The function uses the registration ID of a parent to set the password
+ * of this parent.  The function doesn't set the password of parent
+ * accounts that have already a password defined.
+ */
+CREATE OR REPLACE FUNCTION gf_set_parents_password()
+  RETURNS void
+  VOLATILE
+  LANGUAGE SQL
+AS $$
+  UPDATE
+      account
+    SET
+      password = md5(replace(registration_id, '-', '')),
+      update_time = current_timestamp
+    FROM (
+      SELECT
+          account_id,
+          registration_id
+        FROM (
+          SELECT
+              registration_id,
+              parent1_email_address AS email_address
+            FROM
+              gf_registration
+          UNION
+          SELECT
+              registration_id,
+              parent2_email_address AS email_address
+            FROM
+              gf_registration
+        ) AS foo
+        INNER JOIN account_contact
+          ON (account_contact.value = foo.email_address)
+    ) AS foo
+    WHERE
+      account.password IS NULL
+      AND account.account_id = foo.account_id;
+$$;
