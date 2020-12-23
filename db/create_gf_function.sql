@@ -851,3 +851,98 @@ AS $$
       account.password IS NULL
       AND account.account_id = foo.account_id;
 $$;
+
+
+CREATE OR REPLACE FUNCTION gf_export_upmd_database()
+  RETURNS TABLE (
+    registration_id text,
+    child_account_id uuid,
+    child_qrcode text,
+    child_first_name text,
+    child_last_name text,
+    child_full_name text,
+    child_dob date,
+    child_grade_level smallint,
+    grade_short_name text,
+    class_name text,
+    parent1_account_id uuid,
+    parent1_first_name text,
+    parent1_last_name text,
+    parent1_full_name text,
+    parent1_locale text,
+    parent1_email_address text,
+    parent1_phone_number text,
+    parent1_address text,
+    parent2_account_id uuid,
+    parent2_first_name text,
+    parent2_last_name text,
+    parent2_full_name text,
+    parent2_locale text,
+    parent2_email_address text,
+    parent2_phone_number text,
+    parent2_address text
+  )
+  VOLATILE
+  LANGUAGE SQL
+AS $$
+  SELECT
+      registration_id,
+      child.account_id,
+      CONCAT('student.', child.account_id::text) AS qrcode,
+      child.first_name,
+      child.last_name,
+      child.full_name,
+      child.dob,
+      child.grade_level,
+      (SELECT grade_short_name FROM education_grade WHERE country_code = 'FR' AND education_grade.grade_level = child.grade_level) AS grade_short_name,
+      (SELECT grade_short_name FROM education_grade WHERE country_code = 'FR' AND education_grade.grade_level = child.grade_level) || ' ' || COALESCE(school_class.class_name, '') AS class_name,
+      parent1_account_id,
+      (SELECT first_name FROM account WHERE account_id = parent1_account_id) AS parent1_first_name,
+      (SELECT last_name FROM account WHERE account_id = parent1_account_id) AS parent1_last_name,
+      (SELECT full_name FROM account WHERE account_id = parent1_account_id) AS parent1_full_name,
+      (SELECT locale FROM account WHERE account_id = parent1_account_id) AS parent1_locale,
+      parent1_email_address,
+      (SELECT value FROM account_contact WHERE account_id = parent1_account_id and name = 'PHONE' AND is_primary = true) AS parent1_phone_number,
+      (SELECT property_value FROM place INNER JOIN place_address USING (place_id) WHERE place.account_id = parent1_account_id AND category = 'home' AND property_name = 'formatted_address' LIMIT 1) AS parent1_address,
+      parent2_account_id,
+      (SELECT first_name FROM account WHERE account_id = parent2_account_id) AS parent2_first_name,
+      (SELECT last_name FROM account WHERE account_id = parent2_account_id) AS parent2_last_name,
+      (SELECT full_name FROM account WHERE account_id = parent2_account_id) AS parent2_full_name,
+      (SELECT locale FROM account WHERE account_id = parent2_account_id) AS parent2_locale,
+      parent2_email_address,
+      (SELECT value FROM account_contact WHERE account_id = parent2_account_id and name = 'PHONE' AND is_primary = true) AS parent2_phone_number,
+      (SELECT property_value FROM place INNER JOIN place_address USING (place_id) WHERE place.account_id = parent2_account_id AND category = 'home' AND property_name = 'formatted_address' LIMIT 1) AS parent2_address
+    FROM (
+      SELECT
+          registration_id,
+          (SELECT account_id FROM account_contact WHERE value = parent1_email_address) AS parent1_account_id,
+          parent1_email_address,
+          (SELECT account_id FROM account_contact WHERE value = parent2_email_address) AS parent2_account_id,
+          parent2_email_address
+      FROM (
+          SELECT
+              registration_id,
+              parent1_email_address,
+              CASE
+              WHEN parent2_email_address = parent1_email_address THEN
+                  NULL
+              ELSE
+                  parent2_email_address
+              END AS parent2_email_address
+          FROM
+              gf_registration
+          WHERE
+              registration_id IS NOT NULL
+      ) AS foo
+    ) AS foo
+    INNER JOIN account AS parent1_account
+      ON parent1_account.account_id = parent1_account_id
+    INNER JOIN guardian_child
+      ON guardian_account_id = parent1_account_id
+    INNER JOIN child
+      ON child.account_id = guardian_child.child_account_id
+    LEFT JOIN school_class
+      ON school_class.class_id = child.class_id
+    WHERE
+      parent1_account.object_status = 'enabled'
+$$;
